@@ -1,3 +1,35 @@
 <resources>
     <string name="app_name">SmartManey</string>
+    <string name="login_title">Smart Maney</string>
+    <string name="login_subtitle">Track today. Control tomorrow.</string>
+    <string name="login_action">Login</string>
+    <string name="register_action">Register</string>
+    <string name="or_separator">OR</string>
+    <string name="continue_with_google">Continue with Google</string>
+    <string name="google_icon_placeholder">G</string>
+    <string name="terms_prefix">By continuing, you agree to our</string>
+    <string name="terms_of_service">Terms of Service</string>
+    <string name="and_separator">and</string>
+    <string name="privacy_policy">Privacy Policy</string>
+    <string name="welcome_back">WELCOME BACK</string>
+    <string name="greeting_name">Hi, %1$s!</string>
+    <string name="notification_placeholder">!</string>
+    <string name="monthly_spending_summary">Monthly Spending Summary</string>
+    <string name="change_vs_last_month">12% vs last month</string>
+    <string name="budget_label">Budget: %1$s</string>
+    <string name="adjust_budget">Adjust Budget ></string>
+    <string name="spending_distribution">Spending Distribution</string>
+    <string name="category_food">Food &amp; Drinks</string>
+    <string name="category_rent">Rent &amp; Bills</string>
+    <string name="category_transport">Transport</string>
+    <string name="total_label">TOTAL</string>
+    <string name="total_items">3 Items</string>
+    <string name="quick_insights">Quick Insights</string>
+    <string name="scheduled_bills">Scheduled Bills</string>
+    <string name="scheduled_bills_subtitle">3 bills due soon</string>
+    <string name="scheduled_bills_marker">B</string>
+    <string name="monthly_recap">Monthly Recap</string>
+    <string name="monthly_recap_subtitle">Analyze patterns</string>
+    <string name="monthly_recap_marker">R</string>
+    <string name="logout_action">Back to Login</string>
 </resources>
