@@ -5,11 +5,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -17,8 +19,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FabPosition
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -66,7 +74,8 @@ fun DashboardScreen(
     selectedTab: DashboardTab,
     onAdjustBudgetClick: () -> Unit,
     onTabSelected: (DashboardTab) -> Unit,
-    onLogoutClick: () -> Unit
+    onLogoutClick: () -> Unit,
+    onScanReceiptClick: () -> Unit // Tambahkan parameter aksi untuk tombol tengah
 ) {
     val categories = listOf(
         SpendingCategory(stringResource(R.string.category_food), 0.45f, OrangeCategory),
@@ -77,8 +86,38 @@ fun DashboardScreen(
     Scaffold(
         modifier = modifier,
         containerColor = DashboardBackground,
+
+        // 1. KEMBALIKAN TOMBOL MELAYANG KE SINI
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onScanReceiptClick,
+                shape = CircleShape,
+                containerColor = AccentGreen,
+                contentColor = Color.White,
+                modifier = Modifier
+                    .size(60.dp)
+                    // INI KUNCINYA: Tarik koordinat Y ke bawah.
+                    // Angka positif menarik elemen ke bawah layar.
+                    // Sesuaikan angkanya (misal 30.dp, 40.dp, atau 50.dp) sampai posisinya pas di tengah garis Figma lu.
+                    .offset(y = 60.dp)
+            ) {
+                // 2. GANTI ICON MENJADI KAMERA
+                 Icon(
+                    imageVector = Icons.Default.PhotoCamera,
+                    contentDescription = "Scan Receipt",
+                    tint = Color.White,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+        },
+        floatingActionButtonPosition = FabPosition.Center,
+
+        // 3. PANGGIL BOTTOM BAR LU
         bottomBar = {
-            DashboardBottomBar(selectedTab = selectedTab, onTabSelected = onTabSelected)
+            DashboardBottomBar(
+                selectedTab = selectedTab,
+                onTabSelected = onTabSelected
+            )
         }
     ) { innerPadding ->
         Column(
@@ -119,7 +158,6 @@ fun DashboardScreen(
         }
     }
 }
-
 @Composable
 private fun HeaderSection(userName: String) {
     Card(
@@ -355,48 +393,56 @@ private fun DashboardBottomBar(
     selectedTab: DashboardTab,
     onTabSelected: (DashboardTab) -> Unit
 ) {
-    val tabs = listOf(
-        DashboardTab.Home,
-        DashboardTab.Wallet,
-        DashboardTab.Add,
-        DashboardTab.Reports,
-        DashboardTab.Profile
-    )
-
-    Card(
-        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+    // BottomAppBar otomatis menghitung batas sistem operasi (Window Insets)
+    BottomAppBar(
+        containerColor = Color.White,
+        tonalElevation = 8.dp,
+        contentPadding = PaddingValues(0.dp) // Reset padding default agar bisa diatur manual
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            tabs.forEach { tab ->
-                val isSelected = tab == selectedTab
-                TextButton(onClick = { onTabSelected(tab) }) {
-                    if (tab == DashboardTab.Add) {
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .clip(CircleShape)
-                                .background(if (isSelected) AccentGreen else Color(0xFFD8F8E2)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(text = "+", color = if (isSelected) Color.White else HeaderGreen)
-                        }
-                    } else {
-                        Text(
-                            text = tab.name,
-                            color = if (isSelected) AccentGreen else MutedBlue,
-                            style = MaterialTheme.typography.labelLarge
-                        )
-                    }
-                }
+            // Sisi Kiri
+            Row(
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                BottomNavItem(DashboardTab.Home, selectedTab, onTabSelected)
+                BottomNavItem(DashboardTab.Wallet, selectedTab, onTabSelected)
+            }
+
+            // Ruang kosong mutlak untuk FAB di tengah
+            Spacer(modifier = Modifier.width(72.dp))
+
+            // Sisi Kanan
+            Row(
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                BottomNavItem(DashboardTab.Reports, selectedTab, onTabSelected)
+                BottomNavItem(DashboardTab.Profile, selectedTab, onTabSelected)
             }
         }
+    }
+}
+
+// Fungsi pembantu agar kode Row di atas tidak kotor
+@Composable
+private fun BottomNavItem(
+    tab: DashboardTab,
+    selectedTab: DashboardTab,
+    onTabSelected: (DashboardTab) -> Unit
+) {
+    val isSelected = tab == selectedTab
+    TextButton(onClick = { onTabSelected(tab) }) {
+        Text(
+            text = tab.name,
+            color = if (isSelected) AccentGreen else MutedBlue,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+        )
     }
 }
 
@@ -418,7 +464,8 @@ private fun DashboardScreenPreview() {
             selectedTab = DashboardTab.Home,
             onAdjustBudgetClick = {},
             onTabSelected = {},
-            onLogoutClick = {}
+            onLogoutClick = {},
+            onScanReceiptClick = {}
         )
     }
 }

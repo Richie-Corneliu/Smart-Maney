@@ -19,6 +19,8 @@ import com.kelompok4.smartmaney.DashboardUiState
 import com.kelompok4.smartmaney.reduceDashboardState
 import com.kelompok4.smartmaney.ui.dashboard.DashboardScreen
 import com.kelompok4.smartmaney.ui.login.LoginScreen
+// IMPORT HARUS DITAMBAHKAN AGAR KOMPILER TAHU LOKASI HALAMAN KAMERA LU
+import com.kelompok4.smartmaney.ui.scanreceipt.ScanReceiptScreen
 
 @Composable
 fun AppNavHost(
@@ -71,9 +73,19 @@ fun AppNavHost(
                         popUpTo(AppDestinations.DASHBOARD_ROUTE) { inclusive = true }
                         launchSingleTop = true
                     }
+                },
+                // INI YANG LU TAMBAHKAN: Memberikan perintah pindah rute saat tombol ditekan
+                onScanReceiptClick = {
+                    navController.navigate("scan_receipt_route")
                 }
             )
         }
-    }
-}
 
+        // INI BLIND SPOT LU: Lu harus membuat "ruangan" baru untuk halaman kamera lu
+        composable(route = "scan_receipt_route") {
+            ScanReceiptScreen(
+                onBackClick = {
+                    navController.popBackStack() // Ini perintah baku Android untuk kembali ke layar sebelumnya
+        })
+    }
+}}
