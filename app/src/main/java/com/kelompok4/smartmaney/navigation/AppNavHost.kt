@@ -22,6 +22,7 @@ import com.kelompok4.smartmaney.ui.dashboard.DashboardScreen
 import com.kelompok4.smartmaney.ui.login.LoginScreen
 // IMPORT HARUS DITAMBAHKAN AGAR KOMPILER TAHU LOKASI HALAMAN KAMERA LU
 import com.kelompok4.smartmaney.ui.scanreceipt.ScanReceiptScreen
+import com.kelompok4.smartmaney.ui.expensehistory.ExpenseHistoryScreen
 
 // IMPORT HALAMAN BUATAN KAMU (Pastikan package-nya huruf kecil sesuai yang sudah kita perbaiki)
 import com.kelompok4.smartmaney.ui.monthlyreport.MonthlyRecapScreen
@@ -67,7 +68,7 @@ fun AppNavHost(
                         DashboardAction.UpdateMonthlyBudget(dashboardState.monthlyBudget + 500_000)
                     )
                     // TAMBAHAN: Pindah ke Budget Planning saat tombol ini ditekan
-                    navController.navigate("budget_planning_route")
+                    navController.navigate(AppDestinations.BUDGET_PLANNING_ROUTE)
                 },
                 onTabSelected = { tab ->
                     dashboardState = reduceDashboardState(
@@ -76,7 +77,7 @@ fun AppNavHost(
                     )
                     // TAMBAHAN: Pindah ke Monthly Report jika tab Reports ditekan
                     if (tab == DashboardTab.Reports) {
-                        navController.navigate("monthly_report_route")
+                        navController.navigate(AppDestinations.EXPENSE_HISTORY_ROUTE)
                     }
                 },
                 onLogoutClick = {
@@ -87,13 +88,13 @@ fun AppNavHost(
                 },
                 // INI YANG LU TAMBAHKAN: Memberikan perintah pindah rute saat tombol ditekan
                 onScanReceiptClick = {
-                    navController.navigate("scan_receipt_route")
+                    navController.navigate(AppDestinations.SCAN_RECEIPT_ROUTE)
                 }
             )
         }
 
         // INI BLIND SPOT LU: Lu harus membuat "ruangan" baru untuk halaman kamera lu
-        composable(route = "scan_receipt_route") {
+        composable(route = AppDestinations.SCAN_RECEIPT_ROUTE) {
             ScanReceiptScreen(
                 onBackClick = {
                     navController.popBackStack() // Ini perintah baku Android untuk kembali ke layar sebelumnya
@@ -101,10 +102,22 @@ fun AppNavHost(
             )
         }
 
+        composable(route = AppDestinations.EXPENSE_HISTORY_ROUTE) {
+            ExpenseHistoryScreen(
+                onBackClick = {
+                    dashboardState = reduceDashboardState(
+                        dashboardState,
+                        DashboardAction.SelectTab(DashboardTab.Home)
+                    )
+                    navController.popBackStack()
+                }
+            )
+        }
+
         // ==========================================
         // RUANGAN BARU UNTUK MONTHLY REPORT
         // ==========================================
-        composable(route = "monthly_report_route") {
+        composable(route = AppDestinations.MONTHLY_REPORT_ROUTE) {
             MonthlyRecapScreen(
                 onBackClick = {
                     // Agar icon tab kembali aktif di "Home" setelah user menekan tombol back
@@ -120,7 +133,7 @@ fun AppNavHost(
         // ==========================================
         // RUANGAN BARU UNTUK BUDGET PLANNING
         // ==========================================
-        composable(route = "budget_planning_route") {
+        composable(route = AppDestinations.BUDGET_PLANNING_ROUTE) {
             BudgetPlanningScreen(
                 onBackClick = {
                     navController.popBackStack()

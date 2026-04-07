@@ -144,7 +144,7 @@ fun ScanReceiptScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                // Hapus paddingValues agar kamera benar-benar full screen layaknya aplikasi scanner asli
+                .padding(paddingValues)
                 .background(Color.Black)
         ) {
 

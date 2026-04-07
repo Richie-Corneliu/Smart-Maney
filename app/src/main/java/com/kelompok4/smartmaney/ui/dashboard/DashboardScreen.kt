@@ -20,13 +20,18 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.InsertChartOutlined
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.Wallet
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -39,6 +44,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -409,8 +415,8 @@ private fun DashboardBottomBar(
                 modifier = Modifier.weight(1f),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                BottomNavItem(DashboardTab.Home, selectedTab, onTabSelected)
-                BottomNavItem(DashboardTab.Wallet, selectedTab, onTabSelected)
+                BottomNavItem(imageVector = Icons.Default.Home, tab = DashboardTab.Home, selectedTab = selectedTab, onTabSelected = onTabSelected)
+                BottomNavItem(imageVector = Icons.Default.Wallet, DashboardTab.Wallet, selectedTab, onTabSelected)
             }
 
             // Ruang kosong mutlak untuk FAB di tengah
@@ -421,8 +427,8 @@ private fun DashboardBottomBar(
                 modifier = Modifier.weight(1f),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                BottomNavItem(DashboardTab.Reports, selectedTab, onTabSelected)
-                BottomNavItem(DashboardTab.Profile, selectedTab, onTabSelected)
+                BottomNavItem(imageVector = Icons.Default.InsertChartOutlined, DashboardTab.Reports, selectedTab, onTabSelected)
+                BottomNavItem(imageVector = Icons.Default.Person, DashboardTab.Profile, selectedTab, onTabSelected)
             }
         }
     }
@@ -431,12 +437,23 @@ private fun DashboardBottomBar(
 // Fungsi pembantu agar kode Row di atas tidak kotor
 @Composable
 private fun BottomNavItem(
+    imageVector: ImageVector,
     tab: DashboardTab,
     selectedTab: DashboardTab,
     onTabSelected: (DashboardTab) -> Unit
 ) {
     val isSelected = tab == selectedTab
-    TextButton(onClick = { onTabSelected(tab) }) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        IconButton(onClick = { onTabSelected(tab) }) {
+            Icon(
+                imageVector = imageVector,
+                contentDescription = tab.name,
+                tint = if (isSelected) AccentGreen else MutedBlue
+            )
+        }
+
         Text(
             text = tab.name,
             color = if (isSelected) AccentGreen else MutedBlue,

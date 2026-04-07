@@ -4,14 +4,16 @@
 - Single-module Android app: `:app` only (`settings.gradle.kts`).
 - Package root is `com.kelompok4.smartmaney` (`app/build.gradle.kts`, `AndroidManifest.xml`).
 - UI is Jetpack Compose-first; no XML layouts are used for screens.
-- Current app is starter-level: one activity and one composable flow (`MainActivity.kt`).
+- Current app keeps one activity host (`MainActivity.kt`) and multiple Compose screens wired through Navigation Compose (`app/src/main/java/com/kelompok4/smartmaney/navigation/AppNavHost.kt`).
 
 ## Architecture and Data Flow (Current)
 - Entry point: `MainActivity.onCreate()` calls `enableEdgeToEdge()` then `setContent { ... }`.
-- Compose tree starts with `SmartManeyTheme { Scaffold { Greeting(...) } }` in `MainActivity.kt`.
+- Compose tree starts with `SmartManeyTheme { AppNavHost(...) }` in `MainActivity.kt`.
 - Theme boundary is centralized in `ui/theme/Theme.kt`; keep app-wide color/typography decisions there.
 - `SmartManeyTheme` uses dynamic color on Android 12+ (`Build.VERSION_CODES.S`) and falls back to static palettes.
-- There is no navigation graph, repository layer, or persistence yet; new features should define these explicitly.
+- Navigation graph is defined in `app/src/main/java/com/kelompok4/smartmaney/navigation/AppNavHost.kt`.
+- Route constants currently exist for `login` and `dashboard` in `app/src/main/java/com/kelompok4/smartmaney/navigation/AppDestinations.kt`; other routes are currently literal strings in `AppNavHost.kt` (`scan_receipt_route`, `monthly_report_route`, `budget_planning_route`).
+- There is still no repository layer or persistence yet; feature state is local UI state (`AppState.kt`, `ui/monthlyreport/MonthlyReportState.kt`, `ui/budgetplanning/BudgetPlanningState.kt`).
 
 ## Build/Test Workflows
 - Use Gradle wrapper from repo root: `./gradlew ...`.
@@ -29,7 +31,7 @@
 - Gradle daemon toolchain metadata targets Java 21 for daemon resolution (`gradle/gradle-daemon-jvm.properties`).
 
 ## Code Patterns to Mirror
-- Keep composables small and previewable: see `Greeting()` + `GreetingPreview()` in `MainActivity.kt`.
+- Keep composables small and previewable: see `LoginScreenPreview()` (`ui/login/LoginScreen.kt`), `DashboardScreenPreview()` (`ui/dashboard/DashboardScreen.kt`), `PreviewMonthlyRecap()` (`ui/monthlyreport/MonthlyRecapScreen.kt`), and `PreviewBudgetPlanning()` (`ui/budgetplanning/BudgetPlanningScreen.kt`).
 - Wrap top-level UI in `SmartManeyTheme` instead of creating ad-hoc `MaterialTheme` instances.
 - Place design tokens under `app/src/main/java/com/kelompok4/smartmaney/ui/theme/` (`Color.kt`, `Type.kt`, `Theme.kt`).
 - Keep package naming consistent with `com.kelompok4.smartmaney` for new source sets and tests.
@@ -38,6 +40,7 @@
 - App launch wiring is manifest-driven: `.MainActivity` with `MAIN/LAUNCHER` intent filter (`AndroidManifest.xml`).
 - App label and theme are resource-backed (`res/values/strings.xml`, `res/values/themes.xml`).
 - Backup/data extraction XML exists and is referenced in manifest; preserve these links when editing app config.
+- Camera integration is manifest + Compose driven: `android.permission.CAMERA` and `android.hardware.camera.any` are declared in `AndroidManifest.xml`, and CameraX binding is implemented in `ui/scanreceipt/ScanReceiptScreen.kt`.
 
 ## When Adding New Features
 - If you add a new layer (navigation, data, network), document entry points and package layout in this file.
@@ -46,9 +49,12 @@
 
 ## Feature Notes (Updated)
 - Login UI structure now lives in `app/src/main/java/com/kelompok4/smartmaney/ui/login/LoginScreen.kt`.
-- `MainActivity` hosts `LoginScreen()` inside `SmartManeyTheme` and remains the manifest launch entry point.
+- `MainActivity` hosts `AppNavHost()` inside `SmartManeyTheme` and remains the manifest launch entry point.
 - Current login actions are callback-based placeholders (`onLoginClick`, `onRegisterClick`, `onGoogleClick`) with no auth integration yet.
 - Dashboard UI now lives in `app/src/main/java/com/kelompok4/smartmaney/ui/dashboard/DashboardScreen.kt`.
-- App-level screen switching now uses Navigation Compose in `app/src/main/java/com/kelompok4/smartmaney/navigation/AppNavHost.kt` (`login` <-> `dashboard`).
+- App-level screen switching uses Navigation Compose in `app/src/main/java/com/kelompok4/smartmaney/navigation/AppNavHost.kt` (`login`, `dashboard`, `scan_receipt_route`, `monthly_report_route`, `budget_planning_route`).
 - Local dashboard UI state (`selectedTab`, `monthlyBudget`) is reduced in `app/src/main/java/com/kelompok4/smartmaney/AppState.kt`.
+- Monthly recap state and dummy data live in `app/src/main/java/com/kelompok4/smartmaney/ui/monthlyreport/MonthlyReportState.kt`.
+- Budget planning state and dummy data live in `app/src/main/java/com/kelompok4/smartmaney/ui/budgetplanning/BudgetPlanningState.kt`.
+- Scan receipt flow now lives in `app/src/main/java/com/kelompok4/smartmaney/ui/scanreceipt/ScanReceiptScreen.kt` with camera permission + gallery picker handling.
 

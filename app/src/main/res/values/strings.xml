@@ -32,4 +32,10 @@
     <string name="monthly_recap_subtitle">Analyze patterns</string>
     <string name="monthly_recap_marker">R</string>
     <string name="logout_action">Back to Login</string>
+    <string name="expense_history_title">Riwayat Pengeluaran</string>
+    <string name="expense_history_back">Kembali</string>
+    <string name="expense_history_search">Cari</string>
+    <string name="expense_history_daily">Harian</string>
+    <string name="expense_history_weekly">Mingguan</string>
+    <string name="expense_history_monthly">Bulanan</string>
 </resources>
