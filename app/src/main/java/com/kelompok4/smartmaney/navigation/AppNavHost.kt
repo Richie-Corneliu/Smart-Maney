@@ -30,8 +30,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -44,16 +44,18 @@ import com.kelompok4.smartmaney.DashboardAction
 import com.kelompok4.smartmaney.DashboardTab
 import com.kelompok4.smartmaney.DashboardUiState
 import com.kelompok4.smartmaney.reduceDashboardState
+import com.kelompok4.smartmaney.ui.budgetplanning.BudgetPlanningScreen
 import com.kelompok4.smartmaney.ui.dashboard.DashboardScreen
+import com.kelompok4.smartmaney.ui.detail.TransactionDetailScreen
 import com.kelompok4.smartmaney.ui.expensehistory.ExpenseHistoryScreen
 import com.kelompok4.smartmaney.ui.login.LoginScreen
-import com.kelompok4.smartmaney.ui.budgetplanning.BudgetPlanningScreen
 import com.kelompok4.smartmaney.ui.monthlyreport.MonthlyRecapScreen
 import com.kelompok4.smartmaney.ui.profile.ProfileScreen
 import com.kelompok4.smartmaney.ui.scanreceipt.ScanReceiptScreen
-import com.kelompok4.smartmaney.ui.wallet.WalletScreen
 import com.kelompok4.smartmaney.ui.theme.SmMuted
 import com.kelompok4.smartmaney.ui.theme.SmPrimary
+import com.kelompok4.smartmaney.ui.transaction.EditTransactionScreen
+import com.kelompok4.smartmaney.ui.wallet.WalletScreen
 
 @Composable
 fun AppNavHost(
@@ -61,6 +63,10 @@ fun AppNavHost(
     navController: NavHostController = rememberNavController()
 ) {
     var dashboardState by remember { mutableStateOf(DashboardUiState()) }
+
+    // --- STATE SEMENTARA (IN-MEMORY) UNTUK TRANSAKSI ---
+    var currentNominal by remember { mutableStateOf("Rp 350,000") }
+    var currentCatatan by remember { mutableStateOf("Mokel with arek arek di gacoan saat puasa") }
 
     fun navigateToTab(tab: DashboardTab) {
         dashboardState = reduceDashboardState(dashboardState, DashboardAction.SelectTab(tab))
@@ -130,10 +136,18 @@ fun AppNavHost(
             }
         }
 
-        composable(route = AppDestinations.SCAN_RECEIPT_ROUTE) {
+        composable(route = "scan_receipt_route") {
             ScanReceiptScreen(
                 onBackClick = {
                     navController.popBackStack()
+                },
+                onPhotoSaved = {
+                    // KETIKA FOTO SUKSES, LANGSUNG ARAHKAN KE LAYAR DETAIL
+                    navController.navigate("transaction_detail_route") {
+                        // Opsi tambahan: Hapus layar kamera dari tumpukan (backstack)
+                        // supaya kalau user tekan tombol 'Back' di layar detail, dia nggak balik ke kamera lagi.
+                        popUpTo("scan_receipt_route") { inclusive = true }
+                    }
                 }
             )
         }
@@ -232,6 +246,35 @@ fun AppNavHost(
                     }
                 )
             }
+        }
+
+        composable(route = "transaction_detail_route") {
+            TransactionDetailScreen(
+                nominal = currentNominal,   // Masukkan state ke layar detail
+                catatan = currentCatatan,   // Masukkan state ke layar detail
+                onBackClick = { navController.popBackStack() },
+                onSaveClick = { /* Nanti untuk db beneran */ },
+                onEditClick = {
+                    // Loncat ke layar edit saat ditekan
+                    navController.navigate("edit_transaction_route")
+                }
+            )
+        }
+
+        // 2. TAMBAHKAN RUTE EDIT BARU
+        composable(route = "edit_transaction_route") {
+            EditTransactionScreen(
+                initialNominal = currentNominal,
+                initialNote = currentCatatan,
+                onBackClick = { navController.popBackStack() },
+                onSaveClick = { newNominal, newNote ->
+                    // Saat user klik simpan, perbarui state memori kita
+                    currentNominal = newNominal
+                    currentCatatan = newNote
+                    // Lalu kembalikan user ke layar detail
+                    navController.popBackStack()
+                }
+            )
         }
     }
 }
