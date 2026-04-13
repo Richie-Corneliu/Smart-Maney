@@ -22,5 +22,14 @@ class AppStateReducerTest {
 
         assertEquals(8_000_000, updated.monthlyBudget)
     }
+
+    @Test
+    fun selectTab_profile_updatesSelectedTab() {
+        val initial = DashboardUiState(selectedTab = DashboardTab.Home)
+
+        val updated = reduceDashboardState(initial, DashboardAction.SelectTab(DashboardTab.Profile))
+
+        assertEquals(DashboardTab.Profile, updated.selectedTab)
+    }
 }
 

@@ -22,14 +22,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.kelompok4.smartmaney.ui.theme.SmExpenseRed
+import com.kelompok4.smartmaney.ui.theme.SmHeader
+import com.kelompok4.smartmaney.ui.theme.SmMuted
+import com.kelompok4.smartmaney.ui.theme.SmartManeyTheme
 import java.text.NumberFormat
 import java.util.Locale
-
-// Reusing colors from your palette
-private val DashboardBackground = Color(0xFFF1F1F1)
-private val HeaderGreen = Color(0xFF36A852)
-private val CardSurface = Color(0xFFF8F8F8)
-private val MutedBlue = Color(0xFF6C7B95)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,7 +41,7 @@ fun MonthlyRecapScreen(
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = DashboardBackground,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = { Text("Laporan Bulanan", fontWeight = FontWeight.Bold) },
@@ -53,7 +51,7 @@ fun MonthlyRecapScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = DashboardBackground
+                    containerColor = MaterialTheme.colorScheme.background
                 )
             )
         }
@@ -102,7 +100,7 @@ fun MonthlyRecapScreen(
 private fun TotalExpenseCard(month: String, amount: Int) {
     Card(
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = HeaderGreen),
+        colors = CardDefaults.cardColors(containerColor = SmHeader),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -126,7 +124,7 @@ private fun TotalExpenseCard(month: String, amount: Int) {
 private fun ExpenseBarChartCard(categories: List<CategoryExpense>) {
     Card(
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = CardSurface),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -182,7 +180,7 @@ private fun ExpenseBarChartCard(categories: List<CategoryExpense>) {
 private fun TransactionItemCard(transaction: TransactionItem) {
     Card(
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
     ) {
@@ -202,11 +200,11 @@ private fun TransactionItemCard(transaction: TransactionItem) {
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = transaction.title, fontWeight = FontWeight.Bold)
-                Text(text = transaction.date, color = MutedBlue, style = MaterialTheme.typography.bodySmall)
+                Text(text = transaction.date, color = SmMuted, style = MaterialTheme.typography.bodySmall)
             }
             Text(
                 text = "- ${formatCurrency(transaction.amount)}",
-                color = Color(0xFFD32F2F), // Red for expense
+                color = SmExpenseRed,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -221,5 +219,7 @@ private fun formatCurrency(value: Int): String {
 @Preview
 @Composable
 fun PreviewMonthlyRecap() {
-    MonthlyRecapScreen(onBackClick = {})
+    SmartManeyTheme {
+        MonthlyRecapScreen(onBackClick = {})
+    }
 }

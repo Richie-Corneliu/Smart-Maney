@@ -57,6 +57,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import com.kelompok4.smartmaney.ui.theme.SmPrimary
+import com.kelompok4.smartmaney.ui.theme.SmSurfaceMuted
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -134,7 +136,7 @@ fun ScanReceiptScreen(
                         Icon(
                             Icons.Default.FlashOn,
                             contentDescription = "Flash",
-                            tint = if (isTorchOn) Color(0xFF4CAF50) else Color.White
+                            tint = if (isTorchOn) SmPrimary else Color.White
                         )
                     }
                 }
@@ -221,7 +223,7 @@ fun ScanReceiptScreen(
                         modifier = Modifier
                             .size(48.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFFEEEEEE))
+                            .background(SmSurfaceMuted)
                             // INI KUNCINYA: Memanggil Photo Picker saat ditekan
                             .clickable {
                                 photoPickerLauncher.launch(
@@ -241,7 +243,7 @@ fun ScanReceiptScreen(
                     modifier = Modifier
                         .size(72.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF4CAF50))
+                        .background(SmPrimary)
                         .clickable {
                             // Panggil fungsi jepret saat ditekan
                             takePhoto(context, imageCaptureUseCase)
@@ -254,7 +256,7 @@ fun ScanReceiptScreen(
                 // Tombol Auto
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(
-                        modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFFEEEEEE)),
+                        modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(SmSurfaceMuted),
                         contentAlignment = Alignment.Center
                     ) { Text("A", fontSize = 14.sp, fontWeight = FontWeight.Bold) }
                     Spacer(modifier = Modifier.height(8.dp))

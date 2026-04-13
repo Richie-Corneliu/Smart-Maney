@@ -19,5 +19,21 @@ class AppNavHostTest {
 
         composeTestRule.onNodeWithText("Spending Distribution").assertIsDisplayed()
     }
+
+    @Test
+    fun walletTab_navigatesToWalletScreen() {
+        composeTestRule.onNodeWithText("Login").performClick()
+        composeTestRule.onNodeWithText("Wallet").performClick()
+
+        composeTestRule.onNodeWithText("Current Balance").assertIsDisplayed()
+    }
+
+    @Test
+    fun profileTab_navigatesToProfileScreen() {
+        composeTestRule.onNodeWithText("Login").performClick()
+        composeTestRule.onNodeWithText("Profile").performClick()
+
+        composeTestRule.onNodeWithText("My Profile").assertIsDisplayed()
+    }
 }
 

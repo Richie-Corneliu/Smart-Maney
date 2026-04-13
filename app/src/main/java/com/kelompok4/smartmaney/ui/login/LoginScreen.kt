@@ -30,17 +30,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kelompok4.smartmaney.R
+import com.kelompok4.smartmaney.ui.theme.SmDivider
+import com.kelompok4.smartmaney.ui.theme.SmPrimary
+import com.kelompok4.smartmaney.ui.theme.SmSecondaryButton
+import com.kelompok4.smartmaney.ui.theme.SmSurfaceSoft
+import com.kelompok4.smartmaney.ui.theme.SmTerms
+import com.kelompok4.smartmaney.ui.theme.SmTextHeading
 import com.kelompok4.smartmaney.ui.theme.SmartManeyTheme
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.withStyle
-
-private val ScreenBackground = Color(0xFFE2E2E2)
-private val CardBackground = Color(0xFFF3F3F3)
-private val LoginGreen = Color(0xFF13D340)
-private val SecondaryButton = Color(0xFFE9ECEF)
-private val TermsGray = Color(0xFF9AA3B2)
-private val DividerGray = Color(0xFFB1BACC)
-private val Heading = Color(0xFF243047)
 
 @Composable
 fun LoginScreen(
@@ -51,7 +49,7 @@ fun LoginScreen(
 ) {
     Box(
         modifier = modifier
-            .background(ScreenBackground)
+            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 24.dp, vertical = 36.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -60,7 +58,7 @@ fun LoginScreen(
                 .fillMaxWidth()
                 .padding(top = 80.dp),
             shape = RoundedCornerShape(34.dp),
-            colors = CardDefaults.cardColors(containerColor = CardBackground),
+            colors = CardDefaults.cardColors(containerColor = SmSurfaceSoft),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
             Column(
@@ -72,7 +70,7 @@ fun LoginScreen(
                 Text(
                     text = stringResource(R.string.login_title),
                     style = MaterialTheme.typography.headlineMedium,
-                    color = Heading,
+                    color = SmTextHeading,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -85,15 +83,15 @@ fun LoginScreen(
 
                 ActionButton(
                     label = stringResource(R.string.login_action),
-                    containerColor = LoginGreen,
+                    containerColor = SmPrimary,
                     contentColor = Color.Black,
                     onClick = onLoginClick
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 ActionButton(
                     label = stringResource(R.string.register_action),
-                    containerColor = SecondaryButton,
-                    contentColor = Heading,
+                    containerColor = SmSecondaryButton,
+                    contentColor = SmTextHeading,
                     onClick = onRegisterClick
                 )
                 Spacer(modifier = Modifier.height(18.dp))
@@ -103,17 +101,17 @@ fun LoginScreen(
                 ) {
                     HorizontalDivider(
                         modifier = Modifier.weight(1f),
-                        color = DividerGray
+                        color = SmDivider
                     )
                     Text(
                         text = stringResource(R.string.or_separator),
-                        color = DividerGray,
+                        color = SmDivider,
                         style = MaterialTheme.typography.labelLarge,
                         letterSpacing = 2.sp
                     )
                     HorizontalDivider(
                         modifier = Modifier.weight(1f),
-                        color = DividerGray
+                        color = SmDivider
                     )
                 }
                 Spacer(modifier = Modifier.height(18.dp))
@@ -121,7 +119,7 @@ fun LoginScreen(
                 ActionButton(
                     label = stringResource(R.string.continue_with_google),
                     containerColor = Color.White,
-                    contentColor = Heading,
+                    contentColor = SmTextHeading,
                     prefix = stringResource(R.string.google_icon_placeholder),
                     onClick = onGoogleClick
                 )
@@ -131,18 +129,18 @@ fun LoginScreen(
                     text = buildAnnotatedString {
                         append(stringResource(R.string.terms_prefix))
                         append("\n")
-                        withStyle(style = SpanStyle(color = LoginGreen)) {
+                        withStyle(style = SpanStyle(color = SmPrimary)) {
                             append(stringResource(R.string.terms_of_service))
                         }
                         append(" ")
                         append(stringResource(R.string.and_separator))
                         append(" ")
-                        withStyle(style = SpanStyle(color = LoginGreen)) {
+                        withStyle(style = SpanStyle(color = SmPrimary)) {
                             append(stringResource(R.string.privacy_policy))
                         }
                     },
                     style = MaterialTheme.typography.bodySmall,
-                    color = TermsGray,
+                    color = SmTerms,
                     textAlign = TextAlign.Center,
                     lineHeight = 18.sp
                 )

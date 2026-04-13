@@ -51,18 +51,19 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.kelompok4.smartmaney.DashboardTab
 import com.kelompok4.smartmaney.R
+import com.kelompok4.smartmaney.ui.theme.SmCategoryFood
+import com.kelompok4.smartmaney.ui.theme.SmCategoryRent
+import com.kelompok4.smartmaney.ui.theme.SmCategoryTransport
+import com.kelompok4.smartmaney.ui.theme.SmDivider
+import com.kelompok4.smartmaney.ui.theme.SmHeader
+import com.kelompok4.smartmaney.ui.theme.SmMuted
+import com.kelompok4.smartmaney.ui.theme.SmPrimary
+import com.kelompok4.smartmaney.ui.theme.SmSuccess
+import com.kelompok4.smartmaney.ui.theme.SmSuccessAlt
+import com.kelompok4.smartmaney.ui.theme.SmTextPrimary
 import com.kelompok4.smartmaney.ui.theme.SmartManeyTheme
 import java.text.NumberFormat
 import java.util.Locale
-
-private val DashboardBackground = Color(0xFFF1F1F1)
-private val HeaderGreen = Color(0xFF36A852)
-private val CardSurface = Color(0xFFF8F8F8)
-private val AccentGreen = Color(0xFF13D340)
-private val MutedBlue = Color(0xFF6C7B95)
-private val OrangeCategory = Color(0xFFF26716)
-private val BlueCategory = Color(0xFF5E99E8)
-private val MintCategory = Color(0xFF34C899)
 
 private data class SpendingCategory(
     val name: String,
@@ -81,94 +82,121 @@ fun DashboardScreen(
     onAdjustBudgetClick: () -> Unit,
     onTabSelected: (DashboardTab) -> Unit,
     onLogoutClick: () -> Unit,
-    onScanReceiptClick: () -> Unit // Tambahkan parameter aksi untuk tombol tengah
+    onScanReceiptClick: () -> Unit,
+    showNavigationBar: Boolean = true
 ) {
     val categories = listOf(
-        SpendingCategory(stringResource(R.string.category_food), 0.45f, OrangeCategory),
-        SpendingCategory(stringResource(R.string.category_rent), 0.25f, BlueCategory),
-        SpendingCategory(stringResource(R.string.category_transport), 0.30f, MintCategory)
+        SpendingCategory(stringResource(R.string.category_food), 0.45f, SmCategoryFood),
+        SpendingCategory(stringResource(R.string.category_rent), 0.25f, SmCategoryRent),
+        SpendingCategory(stringResource(R.string.category_transport), 0.30f, SmCategoryTransport)
     )
 
-    Scaffold(
-        modifier = modifier,
-        containerColor = DashboardBackground,
-
-        // 1. KEMBALIKAN TOMBOL MELAYANG KE SINI
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onScanReceiptClick,
-                shape = CircleShape,
-                containerColor = AccentGreen,
-                contentColor = Color.White,
-                modifier = Modifier
-                    .size(60.dp)
-                    // INI KUNCINYA: Tarik koordinat Y ke bawah.
-                    // Angka positif menarik elemen ke bawah layar.
-                    // Sesuaikan angkanya (misal 30.dp, 40.dp, atau 50.dp) sampai posisinya pas di tengah garis Figma lu.
-                    .offset(y = 60.dp)
-            ) {
-                // 2. GANTI ICON MENJADI KAMERA
-                 Icon(
-                    imageVector = Icons.Default.PhotoCamera,
-                    contentDescription = "Scan Receipt",
-                    tint = Color.White,
-                    modifier = Modifier.size(28.dp)
+    if (showNavigationBar) {
+        Scaffold(
+            modifier = modifier,
+            containerColor = MaterialTheme.colorScheme.background,
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = onScanReceiptClick,
+                    shape = CircleShape,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = Color.White,
+                    modifier = Modifier
+                        .size(60.dp)
+                        .offset(y = 60.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PhotoCamera,
+                        contentDescription = "Scan Receipt",
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            },
+            floatingActionButtonPosition = FabPosition.Center,
+            bottomBar = {
+                DashboardBottomBar(
+                    selectedTab = selectedTab,
+                    onTabSelected = onTabSelected
                 )
             }
-        },
-        floatingActionButtonPosition = FabPosition.Center,
-
-        // 3. PANGGIL BOTTOM BAR LU
-        bottomBar = {
-            DashboardBottomBar(
-                selectedTab = selectedTab,
-                onTabSelected = onTabSelected
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
-        ) {
-            HeaderSection(userName = userName)
-            Spacer(modifier = Modifier.height(14.dp))
-            MonthlySummaryCard(
+        ) { innerPadding ->
+            DashboardContent(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = innerPadding,
+                userName = userName,
                 monthlySpent = monthlySpent,
                 monthlyBudget = monthlyBudget,
                 budgetProgress = budgetProgress,
-                onAdjustBudgetClick = onAdjustBudgetClick
+                onAdjustBudgetClick = onAdjustBudgetClick,
+                onLogoutClick = onLogoutClick,
+                categories = categories
             )
-            Spacer(modifier = Modifier.height(20.dp))
-            Text(
-                text = stringResource(R.string.spending_distribution),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            DistributionCard(categories = categories)
-            Spacer(modifier = Modifier.height(20.dp))
-            Text(
-                text = stringResource(R.string.quick_insights),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            QuickInsightsRow()
-            Spacer(modifier = Modifier.height(10.dp))
-            TextButton(onClick = onLogoutClick) {
-                Text(text = stringResource(R.string.logout_action))
-            }
         }
+    } else {
+        DashboardContent(
+            modifier = modifier,
+            contentPadding = PaddingValues(0.dp),
+            userName = userName,
+            monthlySpent = monthlySpent,
+            monthlyBudget = monthlyBudget,
+            budgetProgress = budgetProgress,
+            onAdjustBudgetClick = onAdjustBudgetClick,
+            onLogoutClick = onLogoutClick,
+            categories = categories
+        )
+    }
+}
+
+@Composable
+private fun DashboardContent(
+    modifier: Modifier,
+    contentPadding: PaddingValues,
+    userName: String,
+    monthlySpent: Int,
+    monthlyBudget: Int,
+    budgetProgress: Float,
+    onAdjustBudgetClick: () -> Unit,
+    onLogoutClick: () -> Unit,
+    categories: List<SpendingCategory>
+) {
+    Column(
+        modifier = modifier
+            .padding(contentPadding)
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp)
+    ) {
+        HeaderSection(userName = userName)
+        Spacer(modifier = Modifier.height(14.dp))
+        MonthlySummaryCard(
+            monthlySpent = monthlySpent,
+            monthlyBudget = monthlyBudget,
+            budgetProgress = budgetProgress,
+            onAdjustBudgetClick = onAdjustBudgetClick
+        )
+        Spacer(modifier = Modifier.height(20.dp))
+        Text(
+            text = stringResource(R.string.spending_distribution),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        DistributionCard(categories = categories)
+        Spacer(modifier = Modifier.height(20.dp))
+        Text(
+            text = stringResource(R.string.quick_insights),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        QuickInsightsRow()
     }
 }
 @Composable
 private fun HeaderSection(userName: String) {
     Card(
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = HeaderGreen)
+        colors = CardDefaults.cardColors(containerColor = SmHeader)
     ) {
         Row(
             modifier = Modifier
@@ -212,7 +240,7 @@ private fun MonthlySummaryCard(
 ) {
     Card(
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = CardSurface),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
@@ -220,18 +248,18 @@ private fun MonthlySummaryCard(
                 .fillMaxWidth()
                 .padding(20.dp)
         ) {
-            Text(text = stringResource(R.string.monthly_spending_summary), color = MutedBlue)
+            Text(text = stringResource(R.string.monthly_spending_summary), color = SmMuted)
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = formatCurrency(monthlySpent),
                 style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1D2438)
+                color = SmTextPrimary
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = stringResource(R.string.change_vs_last_month),
-                color = Color(0xFF118A3A),
+                color = SmSuccess,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold
             )
@@ -242,8 +270,8 @@ private fun MonthlySummaryCard(
                     .fillMaxWidth()
                     .height(8.dp)
                     .clip(RoundedCornerShape(40.dp)),
-                color = AccentGreen,
-                trackColor = Color(0xFFE3E7EE)
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = SmDivider
             )
             Spacer(modifier = Modifier.height(8.dp))
             Row(
@@ -253,13 +281,13 @@ private fun MonthlySummaryCard(
             ) {
                 Text(
                     text = stringResource(R.string.budget_label, formatCurrency(monthlyBudget)),
-                    color = MutedBlue,
+                    color = SmMuted,
                     style = MaterialTheme.typography.bodyMedium
                 )
                 TextButton(onClick = onAdjustBudgetClick) {
                     Text(
                         text = stringResource(R.string.adjust_budget),
-                        color = Color(0xFF00A86B),
+                        color = SmSuccessAlt,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
@@ -272,7 +300,7 @@ private fun MonthlySummaryCard(
 private fun DistributionCard(categories: List<SpendingCategory>) {
     Card(
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = CardSurface),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Row(
@@ -295,7 +323,7 @@ private fun DistributionCard(categories: List<SpendingCategory>) {
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "${item.name} (${(item.share * 100).toInt()}%)",
-                            color = Color(0xFF3C4A61),
+                            color = MaterialTheme.colorScheme.onSurface,
                             style = MaterialTheme.typography.bodyLarge
                         )
                     }
@@ -326,13 +354,13 @@ private fun DonutChart(categories: List<SpendingCategory>) {
             Text(
                 text = stringResource(R.string.total_label),
                 style = MaterialTheme.typography.labelMedium,
-                color = MutedBlue
+                color = SmMuted
             )
             Text(
                 text = stringResource(R.string.total_items),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1D2438)
+                color = SmTextPrimary
             )
         }
     }
@@ -369,7 +397,7 @@ private fun InsightCard(
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = CardSurface),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -381,7 +409,7 @@ private fun InsightCard(
                 modifier = Modifier
                     .size(38.dp)
                     .clip(CircleShape)
-                    .background(HeaderGreen),
+                    .background(SmHeader),
                 contentAlignment = Alignment.Center
             ) {
                 Text(text = marker, color = Color.White)
@@ -389,7 +417,7 @@ private fun InsightCard(
             Spacer(modifier = Modifier.height(14.dp))
             Text(text = title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Spacer(modifier = Modifier.height(4.dp))
-            Text(text = subtitle, style = MaterialTheme.typography.bodyMedium, color = MutedBlue)
+            Text(text = subtitle, style = MaterialTheme.typography.bodyMedium, color = SmMuted)
         }
     }
 }
@@ -450,13 +478,13 @@ private fun BottomNavItem(
             Icon(
                 imageVector = imageVector,
                 contentDescription = tab.name,
-                tint = if (isSelected) AccentGreen else MutedBlue
+                tint = if (isSelected) SmPrimary else SmMuted
             )
         }
 
         Text(
             text = tab.name,
-            color = if (isSelected) AccentGreen else MutedBlue,
+            color = if (isSelected) SmPrimary else SmMuted,
             style = MaterialTheme.typography.labelLarge,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
         )

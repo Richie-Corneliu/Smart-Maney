@@ -12,7 +12,7 @@
 - Theme boundary is centralized in `ui/theme/Theme.kt`; keep app-wide color/typography decisions there.
 - `SmartManeyTheme` uses dynamic color on Android 12+ (`Build.VERSION_CODES.S`) and falls back to static palettes.
 - Navigation graph is defined in `app/src/main/java/com/kelompok4/smartmaney/navigation/AppNavHost.kt`.
-- Route constants currently exist for `login` and `dashboard` in `app/src/main/java/com/kelompok4/smartmaney/navigation/AppDestinations.kt`; other routes are currently literal strings in `AppNavHost.kt` (`scan_receipt_route`, `monthly_report_route`, `budget_planning_route`).
+- Route constants are centralized in `app/src/main/java/com/kelompok4/smartmaney/navigation/AppDestinations.kt` (for example `login`, `dashboard`, `wallet_route`, `scan_receipt_route`, `expense_history_route`, `monthly_report_route`, `budget_planning_route`).
 - There is still no repository layer or persistence yet; feature state is local UI state (`AppState.kt`, `ui/monthlyreport/MonthlyReportState.kt`, `ui/budgetplanning/BudgetPlanningState.kt`).
 
 ## Build/Test Workflows
@@ -52,9 +52,11 @@
 - `MainActivity` hosts `AppNavHost()` inside `SmartManeyTheme` and remains the manifest launch entry point.
 - Current login actions are callback-based placeholders (`onLoginClick`, `onRegisterClick`, `onGoogleClick`) with no auth integration yet.
 - Dashboard UI now lives in `app/src/main/java/com/kelompok4/smartmaney/ui/dashboard/DashboardScreen.kt`.
-- App-level screen switching uses Navigation Compose in `app/src/main/java/com/kelompok4/smartmaney/navigation/AppNavHost.kt` (`login`, `dashboard`, `scan_receipt_route`, `monthly_report_route`, `budget_planning_route`).
+- App-level screen switching uses Navigation Compose in `app/src/main/java/com/kelompok4/smartmaney/navigation/AppNavHost.kt` (`login`, `dashboard`, `wallet_route`, `scan_receipt_route`, `expense_history_route`, `monthly_report_route`, `budget_planning_route`).
+- Wallet flow now lives in `app/src/main/java/com/kelompok4/smartmaney/ui/wallet/WalletScreen.kt` and reducer/state logic is in `app/src/main/java/com/kelompok4/smartmaney/ui/wallet/WalletState.kt`.
 - Local dashboard UI state (`selectedTab`, `monthlyBudget`) is reduced in `app/src/main/java/com/kelompok4/smartmaney/AppState.kt`.
 - Monthly recap state and dummy data live in `app/src/main/java/com/kelompok4/smartmaney/ui/monthlyreport/MonthlyReportState.kt`.
 - Budget planning state and dummy data live in `app/src/main/java/com/kelompok4/smartmaney/ui/budgetplanning/BudgetPlanningState.kt`.
 - Scan receipt flow now lives in `app/src/main/java/com/kelompok4/smartmaney/ui/scanreceipt/ScanReceiptScreen.kt` with camera permission + gallery picker handling.
+- Profile flow now lives in `app/src/main/java/com/kelompok4/smartmaney/ui/profile/ProfileScreen.kt` with local reducer/state in `app/src/main/java/com/kelompok4/smartmaney/ui/profile/ProfileState.kt` and route `profile_route` wired through `AppNavHost.kt`.
 

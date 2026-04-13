@@ -12,19 +12,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.kelompok4.smartmaney.ui.theme.SmDanger
+import com.kelompok4.smartmaney.ui.theme.SmDivider
+import com.kelompok4.smartmaney.ui.theme.SmMuted
+import com.kelompok4.smartmaney.ui.theme.SmPrimary
+import com.kelompok4.smartmaney.ui.theme.SmSurface
+import com.kelompok4.smartmaney.ui.theme.SmWarning
+import com.kelompok4.smartmaney.ui.theme.SmartManeyTheme
 import java.text.NumberFormat
 import java.util.Locale
-
-private val DashboardBackground = Color(0xFFF1F1F1)
-private val CardSurface = Color(0xFFF8F8F8)
-private val AccentGreen = Color(0xFF13D340)
-private val WarningYellow = Color(0xFFF5B041)
-private val DangerRed = Color(0xFFE74C3C)
-private val MutedBlue = Color(0xFF6C7B95)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,7 +38,7 @@ fun BudgetPlanningScreen(
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = DashboardBackground,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = { Text("Budget Planning", fontWeight = FontWeight.Bold) },
@@ -48,7 +47,7 @@ fun BudgetPlanningScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = DashboardBackground)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         }
     ) { innerPadding ->
@@ -93,7 +92,7 @@ private fun OverallBudgetCard(
 ) {
     Card(
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -104,7 +103,7 @@ private fun OverallBudgetCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text(text = "Total Budget Bulanan", color = MutedBlue)
+                    Text(text = "Total Budget Bulanan", color = SmMuted)
                     Text(
                         text = formatCurrency(totalBudget),
                         style = MaterialTheme.typography.headlineMedium,
@@ -112,7 +111,7 @@ private fun OverallBudgetCard(
                     )
                 }
                 IconButton(onClick = onEditClick) {
-                    Icon(Icons.Default.Edit, contentDescription = "Edit Budget", tint = AccentGreen)
+                    Icon(Icons.Default.Edit, contentDescription = "Edit Budget", tint = SmPrimary)
                 }
             }
 
@@ -120,9 +119,9 @@ private fun OverallBudgetCard(
 
             // Dynamic progress bar color
             val progressColor = when {
-                progress < 0.5f -> AccentGreen
-                progress < 0.8f -> WarningYellow
-                else -> DangerRed
+                progress < 0.5f -> SmPrimary
+                progress < 0.8f -> SmWarning
+                else -> SmDanger
             }
 
             LinearProgressIndicator(
@@ -132,7 +131,7 @@ private fun OverallBudgetCard(
                     .height(10.dp)
                     .clip(RoundedCornerShape(40.dp)),
                 color = progressColor,
-                trackColor = Color(0xFFE3E7EE)
+                trackColor = SmDivider
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -152,7 +151,7 @@ private fun OverallBudgetCard(
 private fun CategoryBudgetCard(item: BudgetCategoryItem) {
     Card(
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = CardSurface),
+        colors = CardDefaults.cardColors(containerColor = SmSurface),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -161,15 +160,15 @@ private fun CategoryBudgetCard(item: BudgetCategoryItem) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(text = item.name, fontWeight = FontWeight.Bold)
-                Text(text = formatCurrency(item.allocated), fontWeight = FontWeight.Bold, color = MutedBlue)
+                Text(text = formatCurrency(item.allocated), fontWeight = FontWeight.Bold, color = SmMuted)
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
             val progressColor = when {
-                item.progress < 0.5f -> AccentGreen
-                item.progress < 0.8f -> WarningYellow
-                else -> DangerRed
+                item.progress < 0.5f -> SmPrimary
+                item.progress < 0.8f -> SmWarning
+                else -> SmDanger
             }
 
             LinearProgressIndicator(
@@ -179,14 +178,14 @@ private fun CategoryBudgetCard(item: BudgetCategoryItem) {
                     .height(6.dp)
                     .clip(RoundedCornerShape(40.dp)),
                 color = progressColor,
-                trackColor = Color(0xFFE3E7EE)
+                trackColor = SmDivider
             )
 
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Tersisa: ${formatCurrency(item.remaining)}",
                 style = MaterialTheme.typography.bodySmall,
-                color = if (item.remaining < 0) DangerRed else MutedBlue
+                color = if (item.remaining < 0) SmDanger else SmMuted
             )
         }
     }
@@ -200,5 +199,7 @@ private fun formatCurrency(value: Int): String {
 @Preview
 @Composable
 fun PreviewBudgetPlanning() {
-    BudgetPlanningScreen(onBackClick = {})
+    SmartManeyTheme {
+        BudgetPlanningScreen(onBackClick = {})
+    }
 }

@@ -46,13 +46,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.kelompok4.smartmaney.R
+import com.kelompok4.smartmaney.ui.theme.SmBackgroundAlt
+import com.kelompok4.smartmaney.ui.theme.SmCategoryFood
+import com.kelompok4.smartmaney.ui.theme.SmCategoryFoodBg
+import com.kelompok4.smartmaney.ui.theme.SmCategoryHealth
+import com.kelompok4.smartmaney.ui.theme.SmCategoryHealthBg
+import com.kelompok4.smartmaney.ui.theme.SmCategoryRent
+import com.kelompok4.smartmaney.ui.theme.SmCategoryShopping
+import com.kelompok4.smartmaney.ui.theme.SmCategoryShoppingBg
+import com.kelompok4.smartmaney.ui.theme.SmCategoryTransportBg
+import com.kelompok4.smartmaney.ui.theme.SmDivider
+import com.kelompok4.smartmaney.ui.theme.SmPrimary
+import com.kelompok4.smartmaney.ui.theme.SmMuted
+import com.kelompok4.smartmaney.ui.theme.SmTextPrimary
 import com.kelompok4.smartmaney.ui.theme.SmartManeyTheme
-
-private val Bg = Color(0xFFF5F5F5)
-private val Txt = Color(0xFF1E2430)
-private val Muted = Color(0xFF738097)
-private val Accent = Color(0xFF29C35A)
-private val Line = Color(0xFFE8EAF0)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,9 +69,9 @@ fun ExpenseHistoryScreen(modifier: Modifier = Modifier, onBackClick: () -> Unit)
 
     Scaffold(
         modifier = modifier,
-        containerColor = Bg,
+        containerColor = SmBackgroundAlt,
         topBar = {
-            TopAppBar(title = { Text(stringResource(R.string.expense_history_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Txt) }, navigationIcon = {
+            TopAppBar(title = { Text(stringResource(R.string.expense_history_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = SmTextPrimary) }, navigationIcon = {
                 IconButton(onClick = onBackClick) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.expense_history_back)) }
             }, actions = {
                 IconButton(onClick = {}) { Icon(Icons.Default.Search, stringResource(R.string.expense_history_search)) }
@@ -75,20 +82,20 @@ fun ExpenseHistoryScreen(modifier: Modifier = Modifier, onBackClick: () -> Unit)
             Tabs(selected = state.selectedFilter) {
                 state = reduceExpenseHistoryState(ExpenseHistoryAction.SelectFilter(it), nowMillis = now)
             }
-            HorizontalDivider(color = Line)
+            HorizontalDivider(color = SmDivider)
             LazyColumn(Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
                 state.groups.forEach { group ->
                     item(group.headerLabel) {
                         Spacer(Modifier.height(14.dp))
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(group.headerLabel, style = MaterialTheme.typography.labelMedium, color = Muted, fontWeight = FontWeight.SemiBold)
-                            Text("-${formatRupiah(group.totalAmount)}", style = MaterialTheme.typography.labelMedium, color = Muted)
+                            Text(group.headerLabel, style = MaterialTheme.typography.labelMedium, color = SmMuted, fontWeight = FontWeight.SemiBold)
+                            Text("-${formatRupiah(group.totalAmount)}", style = MaterialTheme.typography.labelMedium, color = SmMuted)
                         }
                         Spacer(Modifier.height(6.dp))
                     }
                     items(group.items, key = { it.id }) { item ->
                         ExpenseRow(item)
-                        HorizontalDivider(color = Line)
+                        HorizontalDivider(color = SmDivider)
                     }
                 }
                 item { Spacer(Modifier.height(18.dp)) }
@@ -109,8 +116,8 @@ private fun Tabs(selected: ExpenseFilter, onSelect: (ExpenseFilter) -> Unit) {
 @Composable
 private fun TabItem(label: String, selected: Boolean, onClick: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable(onClick = onClick)) {
-        Text(label, color = if (selected) Accent else Muted, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal, modifier = Modifier.padding(vertical = 10.dp))
-        Box(Modifier.height(2.dp).width(82.dp).background(if (selected) Accent else Color.Transparent))
+        Text(label, color = if (selected) SmPrimary else SmMuted, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal, modifier = Modifier.padding(vertical = 10.dp))
+        Box(Modifier.height(2.dp).width(82.dp).background(if (selected) SmPrimary else Color.Transparent))
     }
 }
 
@@ -123,18 +130,18 @@ private fun ExpenseRow(item: ExpenseTransaction) {
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(item.title, style = MaterialTheme.typography.bodyLarge, color = Txt, fontWeight = FontWeight.SemiBold)
-            Text("${item.categoryLabel} · ${item.timeLabel}", style = MaterialTheme.typography.bodySmall, color = Muted)
+            Text(item.title, style = MaterialTheme.typography.bodyLarge, color = SmTextPrimary, fontWeight = FontWeight.SemiBold)
+            Text("${item.categoryLabel} · ${item.timeLabel}", style = MaterialTheme.typography.bodySmall, color = SmMuted)
         }
-        Text("-${formatRupiah(item.amount)}", color = Txt, fontWeight = FontWeight.Bold)
+        Text("-${formatRupiah(item.amount)}", color = SmTextPrimary, fontWeight = FontWeight.Bold)
     }
 }
 
 private fun categoryVisual(category: ExpenseCategory): Triple<ImageVector, Color, Color> = when (category) {
-    ExpenseCategory.Food -> Triple(Icons.Default.Restaurant, Color(0xFFFFF0DD), Color(0xFFF08726))
-    ExpenseCategory.Transport -> Triple(Icons.Default.DirectionsCar, Color(0xFFE8F0FF), Color(0xFF3A73E8))
-    ExpenseCategory.Shopping -> Triple(Icons.Default.ShoppingBag, Color(0xFFF2E9FF), Color(0xFF8A4BE8))
-    ExpenseCategory.Health -> Triple(Icons.Default.Medication, Color(0xFFE1F7E9), Color(0xFF2FA55E))
+    ExpenseCategory.Food -> Triple(Icons.Default.Restaurant, SmCategoryFoodBg, SmCategoryFood)
+    ExpenseCategory.Transport -> Triple(Icons.Default.DirectionsCar, SmCategoryTransportBg, SmCategoryRent)
+    ExpenseCategory.Shopping -> Triple(Icons.Default.ShoppingBag, SmCategoryShoppingBg, SmCategoryShopping)
+    ExpenseCategory.Health -> Triple(Icons.Default.Medication, SmCategoryHealthBg, SmCategoryHealth)
 }
 
 @Preview(showBackground = true, showSystemUi = true)
