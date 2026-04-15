@@ -30,8 +30,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -44,16 +44,16 @@ import com.kelompok4.smartmaney.DashboardAction
 import com.kelompok4.smartmaney.DashboardTab
 import com.kelompok4.smartmaney.DashboardUiState
 import com.kelompok4.smartmaney.reduceDashboardState
+import com.kelompok4.smartmaney.ui.budgetplanning.BudgetPlanningScreen
 import com.kelompok4.smartmaney.ui.dashboard.DashboardScreen
 import com.kelompok4.smartmaney.ui.expensehistory.ExpenseHistoryScreen
 import com.kelompok4.smartmaney.ui.login.LoginScreen
-import com.kelompok4.smartmaney.ui.budgetplanning.BudgetPlanningScreen
 import com.kelompok4.smartmaney.ui.monthlyreport.MonthlyRecapScreen
 import com.kelompok4.smartmaney.ui.profile.ProfileScreen
 import com.kelompok4.smartmaney.ui.scanreceipt.ScanReceiptScreen
-import com.kelompok4.smartmaney.ui.wallet.WalletScreen
 import com.kelompok4.smartmaney.ui.theme.SmMuted
 import com.kelompok4.smartmaney.ui.theme.SmPrimary
+import com.kelompok4.smartmaney.ui.wallet.WalletScreen
 
 @Composable
 fun AppNavHost(
@@ -125,6 +125,9 @@ fun AppNavHost(
                         }
                     },
                     onScanReceiptClick = { navController.navigate(AppDestinations.SCAN_RECEIPT_ROUTE) },
+                    onMonthlyRecapClick = {
+                        navController.navigate(AppDestinations.MONTHLY_REPORT_ROUTE)
+                    },
                     showNavigationBar = false
                 )
             }
@@ -205,9 +208,6 @@ fun AppNavHost(
                         .padding(bottom = innerPadding.calculateBottomPadding()),
                     onBackClick = {
                         navigateToTab(DashboardTab.Home)
-                    },
-                    onOpenBudgetPlanning = {
-                        navController.navigate(AppDestinations.BUDGET_PLANNING_ROUTE)
                     }
                 )
             }

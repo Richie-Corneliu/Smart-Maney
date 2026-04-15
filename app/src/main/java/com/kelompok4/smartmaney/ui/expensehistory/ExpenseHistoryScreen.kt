@@ -17,13 +17,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingBag
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -56,8 +54,8 @@ import com.kelompok4.smartmaney.ui.theme.SmCategoryShopping
 import com.kelompok4.smartmaney.ui.theme.SmCategoryShoppingBg
 import com.kelompok4.smartmaney.ui.theme.SmCategoryTransportBg
 import com.kelompok4.smartmaney.ui.theme.SmDivider
-import com.kelompok4.smartmaney.ui.theme.SmPrimary
 import com.kelompok4.smartmaney.ui.theme.SmMuted
+import com.kelompok4.smartmaney.ui.theme.SmPrimary
 import com.kelompok4.smartmaney.ui.theme.SmTextPrimary
 import com.kelompok4.smartmaney.ui.theme.SmartManeyTheme
 
@@ -71,11 +69,15 @@ fun ExpenseHistoryScreen(modifier: Modifier = Modifier, onBackClick: () -> Unit)
         modifier = modifier,
         containerColor = SmBackgroundAlt,
         topBar = {
-            TopAppBar(title = { Text(stringResource(R.string.expense_history_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = SmTextPrimary) }, navigationIcon = {
-                IconButton(onClick = onBackClick) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.expense_history_back)) }
-            }, actions = {
-                IconButton(onClick = {}) { Icon(Icons.Default.Search, stringResource(R.string.expense_history_search)) }
-            })
+            TopAppBar(title = { Text(stringResource(R.string.expense_history_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = SmTextPrimary) },
+                actions = {
+                    IconButton(onClick = {}) {
+                        Icon(
+                            Icons.Default.Search,
+                            stringResource(R.string.expense_history_search)
+                        )
+                    }
+                })
         }
     ){ innerPadding ->
         Column(Modifier.fillMaxSize().padding(innerPadding)) {

@@ -2,6 +2,7 @@ package com.kelompok4.smartmaney.ui.dashboard
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -83,6 +84,7 @@ fun DashboardScreen(
     onTabSelected: (DashboardTab) -> Unit,
     onLogoutClick: () -> Unit,
     onScanReceiptClick: () -> Unit,
+    onMonthlyRecapClick: () -> Unit,
     showNavigationBar: Boolean = true
 ) {
     val categories = listOf(
@@ -130,6 +132,7 @@ fun DashboardScreen(
                 budgetProgress = budgetProgress,
                 onAdjustBudgetClick = onAdjustBudgetClick,
                 onLogoutClick = onLogoutClick,
+                onMonthlyRecapClick = onMonthlyRecapClick,
                 categories = categories
             )
         }
@@ -143,6 +146,7 @@ fun DashboardScreen(
             budgetProgress = budgetProgress,
             onAdjustBudgetClick = onAdjustBudgetClick,
             onLogoutClick = onLogoutClick,
+            onMonthlyRecapClick = onMonthlyRecapClick,
             categories = categories
         )
     }
@@ -158,6 +162,7 @@ private fun DashboardContent(
     budgetProgress: Float,
     onAdjustBudgetClick: () -> Unit,
     onLogoutClick: () -> Unit,
+    onMonthlyRecapClick: () -> Unit,
     categories: List<SpendingCategory>
 ) {
     Column(
@@ -189,7 +194,24 @@ private fun DashboardContent(
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(12.dp))
-        QuickInsightsRow()
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            InsightCard(
+                modifier = Modifier.weight(1f),
+                title = stringResource(R.string.scheduled_bills),
+                subtitle = stringResource(R.string.scheduled_bills_subtitle),
+                marker = stringResource(R.string.scheduled_bills_marker)
+            )
+            InsightCard(
+                modifier = Modifier.weight(1f),
+                title = stringResource(R.string.monthly_recap),
+                subtitle = stringResource(R.string.monthly_recap_subtitle),
+                marker = stringResource(R.string.monthly_recap_marker),
+                onClick = onMonthlyRecapClick
+            )
+        }
     }
 }
 @Composable
@@ -310,7 +332,7 @@ private fun DistributionCard(categories: List<SpendingCategory>) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             DonutChart(categories = categories)
-            Spacer(modifier = Modifier.width(14.dp))
+            Spacer(modifier = Modifier.width(28.dp))
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 categories.forEach { item ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -353,12 +375,12 @@ private fun DonutChart(categories: List<SpendingCategory>) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = stringResource(R.string.total_label),
-                style = MaterialTheme.typography.labelMedium,
+                style = MaterialTheme.typography.labelSmall,
                 color = SmMuted
             )
             Text(
                 text = stringResource(R.string.total_items),
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = SmTextPrimary
             )
@@ -366,36 +388,17 @@ private fun DonutChart(categories: List<SpendingCategory>) {
     }
 }
 
-@Composable
-private fun QuickInsightsRow() {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        InsightCard(
-            modifier = Modifier.weight(1f),
-            title = stringResource(R.string.scheduled_bills),
-            subtitle = stringResource(R.string.scheduled_bills_subtitle),
-            marker = stringResource(R.string.scheduled_bills_marker)
-        )
-        InsightCard(
-            modifier = Modifier.weight(1f),
-            title = stringResource(R.string.monthly_recap),
-            subtitle = stringResource(R.string.monthly_recap_subtitle),
-            marker = stringResource(R.string.monthly_recap_marker)
-        )
-    }
-}
 
 @Composable
 private fun InsightCard(
     modifier: Modifier = Modifier,
     title: String,
     subtitle: String,
-    marker: String
+    marker: String,
+    onClick: () -> Unit = {}
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier.clickable(onClick = onClick),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -510,7 +513,8 @@ private fun DashboardScreenPreview() {
             onAdjustBudgetClick = {},
             onTabSelected = {},
             onLogoutClick = {},
-            onScanReceiptClick = {}
+            onScanReceiptClick = {},
+            onMonthlyRecapClick = {},
         )
     }
 }

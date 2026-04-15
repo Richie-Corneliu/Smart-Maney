@@ -11,8 +11,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -39,7 +39,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.text.KeyboardOptions
 import com.kelompok4.smartmaney.ui.theme.SmDanger
 import com.kelompok4.smartmaney.ui.theme.SmSuccess
 import com.kelompok4.smartmaney.ui.theme.SmartManeyTheme
@@ -51,7 +50,6 @@ import java.util.Locale
 fun WalletScreen(
     modifier: Modifier = Modifier,
     onBackClick: () -> Unit = {},
-    onOpenBudgetPlanning: () -> Unit = {}
 ) {
     var uiState by remember {
         mutableStateOf(
@@ -87,19 +85,6 @@ fun WalletScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Wallet", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    Button(
-                        onClick = onOpenBudgetPlanning,
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp)
-                    ) {
-                        Text(text = "Budget")
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 )
