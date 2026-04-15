@@ -64,7 +64,8 @@ import java.io.File
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScanReceiptScreen(
-    onBackClick: () -> Unit // 1. PARAMETER BARU UNTUK TOMBOL BACK
+    onBackClick: () -> Unit,
+    onPhotoSaved: () -> Unit// 1. PARAMETER BARU UNTUK TOMBOL BACK
 ) {
     val context = LocalContext.current
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
@@ -103,6 +104,7 @@ fun ScanReceiptScreen(
                 selectedImageUri = uri
                 // Karena lu menunda UI untuk menampilkan foto, kita pakai Toast dulu sebagai bukti datanya masuk
                 Toast.makeText(context, "Foto dipilih: $uri", Toast.LENGTH_SHORT).show()
+                onPhotoSaved()
             } else {
                 Toast.makeText(context, "Batal memilih foto", Toast.LENGTH_SHORT).show()
             }
@@ -238,9 +240,10 @@ fun ScanReceiptScreen(
                         .clip(CircleShape)
                         .background(SmPrimary)
                         .clickable {
-                            // Panggil fungsi jepret saat ditekan
-                            takePhoto(context, imageCaptureUseCase)
-                        },
+                            takePhoto(context, imageCaptureUseCase) {
+                                onPhotoSaved() // Teruskan jembatannya ke fungsi
+                            }
+                        }   ,
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(Icons.Default.PhotoCamera, contentDescription = "Capture", tint = Color.White, modifier = Modifier.size(32.dp))
@@ -261,14 +264,13 @@ fun ScanReceiptScreen(
 }
 
 // 6. FUNGSI EKSEKUSI JEPRET FOTO
-private fun takePhoto(context: Context, imageCapture: ImageCapture?) {
+// Tambahkan parameter onPhotoSaved di fungsinya
+private fun takePhoto(context: Context, imageCapture: ImageCapture?, onPhotoSaved: () -> Unit) {
     val capture = imageCapture ?: return
 
-    // Buat file sementara di direktori cache HP lu
     val photoFile = File(context.cacheDir, "receipt_${System.currentTimeMillis()}.jpg")
     val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
 
-    // Perintahkan CameraX mengambil gambar
     capture.takePicture(
         outputOptions,
         ContextCompat.getMainExecutor(context),
@@ -278,8 +280,10 @@ private fun takePhoto(context: Context, imageCapture: ImageCapture?) {
             }
 
             override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                // Tampilkan pesan sukses sementara. Nanti lu bisa passing path file ini ke layar konfirmasi.
                 Toast.makeText(context, "Foto berhasil disimpan!", Toast.LENGTH_SHORT).show()
+
+                // EKSEKUSI JEMBATAN: Pindah halaman setelah kamera sukses menjepret
+                onPhotoSaved()
             }
         }
     )
