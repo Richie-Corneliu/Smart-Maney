@@ -11,8 +11,8 @@ SmartManey is a single-module Android app using Jetpack Compose.
   - `wallet_route`
   - `scan_receipt_route`
   - `expense_history_route`
-  - `monthly_report_route`
   - `budget_planning_route`
+- Monthly recap is shown through `expense_history_route` with mode argument `monthly_recap`.
 - Login button navigates to dashboard.
 - Logout action in dashboard navigates back to login.
 - Dashboard keeps local reducer-driven UI state (`selectedTab`, `monthlyBudget`) in `AppState.kt`.

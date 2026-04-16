@@ -118,13 +118,6 @@ fun ProfileScreen(
                                 uiState = reduceProfileState(uiState, ProfileAction.ToggleNotifications(it))
                             }
                         )
-                        PreferenceRow(
-                            title = stringResource(R.string.profile_dark_mode),
-                            checked = uiState.darkModeEnabled,
-                            onCheckedChange = {
-                                uiState = reduceProfileState(uiState, ProfileAction.ToggleDarkMode(it))
-                            }
-                        )
                     }
                 }
             }

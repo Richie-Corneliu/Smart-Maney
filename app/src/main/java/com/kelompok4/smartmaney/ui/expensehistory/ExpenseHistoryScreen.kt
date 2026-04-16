@@ -61,7 +61,7 @@ import com.kelompok4.smartmaney.ui.theme.SmartManeyTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ExpenseHistoryScreen(modifier: Modifier = Modifier, onBackClick: () -> Unit) {
+fun ExpenseHistoryScreen(modifier: Modifier = Modifier) {
     val now = remember { ExpenseHistoryDummyData.transactions.first().timestampMillis }
     var state by remember { mutableStateOf(buildExpenseHistoryState(ExpenseFilter.Daily, nowMillis = now)) }
 
@@ -149,5 +149,5 @@ private fun categoryVisual(category: ExpenseCategory): Triple<ImageVector, Color
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun PreviewExpenseHistoryScreen() {
-    SmartManeyTheme { ExpenseHistoryScreen(onBackClick = {}) }
+    SmartManeyTheme { ExpenseHistoryScreen() }
 }

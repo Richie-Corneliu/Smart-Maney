@@ -1,6 +1,7 @@
 package com.kelompok4.smartmaney.navigation
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -37,9 +38,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.kelompok4.smartmaney.DashboardAction
 import com.kelompok4.smartmaney.DashboardTab
 import com.kelompok4.smartmaney.DashboardUiState
@@ -49,7 +52,6 @@ import com.kelompok4.smartmaney.ui.dashboard.DashboardScreen
 import com.kelompok4.smartmaney.ui.detail.TransactionDetailScreen
 import com.kelompok4.smartmaney.ui.expensehistory.ExpenseHistoryScreen
 import com.kelompok4.smartmaney.ui.login.LoginScreen
-import com.kelompok4.smartmaney.ui.monthlyreport.MonthlyRecapScreen
 import com.kelompok4.smartmaney.ui.profile.ProfileScreen
 import com.kelompok4.smartmaney.ui.scanreceipt.ScanReceiptScreen
 import com.kelompok4.smartmaney.ui.theme.SmMuted
@@ -117,11 +119,7 @@ fun AppNavHost(
                     budgetProgress = 0.64f,
                     selectedTab = dashboardState.selectedTab,
                     onAdjustBudgetClick = {
-                        dashboardState = reduceDashboardState(
-                            dashboardState,
-                            DashboardAction.UpdateMonthlyBudget(dashboardState.monthlyBudget + 500_000)
-                        )
-                        navigateToTab(DashboardTab.Wallet)
+                        navController.navigate(AppDestinations.BUDGET_PLANNING_ROUTE)
                     },
                     onTabSelected = ::navigateToTab,
                     onLogoutClick = {
@@ -131,12 +129,19 @@ fun AppNavHost(
                         }
                     },
                     onScanReceiptClick = { navController.navigate(AppDestinations.SCAN_RECEIPT_ROUTE) },
-                    showNavigationBar = false
+                    showNavigationBar = false,
+                    onMonthlyRecapClick = {
+                        navController.navigate(
+                            AppDestinations.expenseHistoryRoute(
+                                AppDestinations.EXPENSE_HISTORY_MODE_MONTHLY_RECAP
+                            )
+                        )
+                    },
                 )
             }
         }
 
-        composable(route = "scan_receipt_route") {
+        composable(route = AppDestinations.SCAN_RECEIPT_ROUTE) {
             ScanReceiptScreen(
                 onBackClick = {
                     navController.popBackStack()
@@ -152,7 +157,15 @@ fun AppNavHost(
             )
         }
 
-        composable(route = AppDestinations.EXPENSE_HISTORY_ROUTE) {
+        composable(
+            route = AppDestinations.EXPENSE_HISTORY_ROUTE_PATTERN,
+            arguments = listOf(
+                navArgument(AppDestinations.EXPENSE_HISTORY_MODE_ARG) {
+                    type = NavType.StringType
+                    defaultValue = AppDestinations.EXPENSE_HISTORY_MODE_DEFAULT
+                }
+            )
+        ) {
             syncTab(DashboardTab.Reports)
             AppShellScaffold(
                 selectedTab = dashboardState.selectedTab,
@@ -162,28 +175,7 @@ fun AppNavHost(
                 ExpenseHistoryScreen(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(bottom = innerPadding.calculateBottomPadding()),
-                    onBackClick = {
-                        navigateToTab(DashboardTab.Home)
-                    }
-                )
-            }
-        }
-
-        composable(route = AppDestinations.MONTHLY_REPORT_ROUTE) {
-            syncTab(DashboardTab.Reports)
-            AppShellScaffold(
-                selectedTab = dashboardState.selectedTab,
-                onTabSelected = ::navigateToTab,
-                onScanReceiptClick = { navController.navigate(AppDestinations.SCAN_RECEIPT_ROUTE) }
-            ) { innerPadding ->
-                MonthlyRecapScreen(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(bottom = innerPadding.calculateBottomPadding()),
-                    onBackClick = {
-                        navigateToTab(DashboardTab.Home)
-                    }
+                        .padding(bottom = innerPadding.calculateBottomPadding())
                 )
             }
         }
@@ -216,14 +208,7 @@ fun AppNavHost(
                 WalletScreen(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(bottom = innerPadding.calculateBottomPadding()),
-                    onBackClick = {
-                        navigateToTab(DashboardTab.Home)
-                    },
-                    onOpenBudgetPlanning = {
-                        navController.navigate(AppDestinations.BUDGET_PLANNING_ROUTE)
-                    }
-                )
+                        .padding(bottom = innerPadding.calculateBottomPadding()))
             }
         }
 
@@ -370,7 +355,7 @@ private fun AppBottomNavItem(
     onTabSelected: (DashboardTab) -> Unit
 ) {
     val isSelected = tab == selectedTab
-    androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         IconButton(onClick = { onTabSelected(tab) }) {
             Icon(
                 imageVector = imageVector,

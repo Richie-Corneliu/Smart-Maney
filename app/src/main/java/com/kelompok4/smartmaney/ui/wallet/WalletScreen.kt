@@ -49,7 +49,6 @@ import java.util.Locale
 @Composable
 fun WalletScreen(
     modifier: Modifier = Modifier,
-    onBackClick: () -> Unit = {},
 ) {
     var uiState by remember {
         mutableStateOf(
