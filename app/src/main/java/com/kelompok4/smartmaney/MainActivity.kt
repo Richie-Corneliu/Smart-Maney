@@ -6,16 +6,25 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.lifecycleScope
 import com.kelompok4.smartmaney.navigation.AppNavHost
 import com.kelompok4.smartmaney.ui.theme.SmartManeyTheme
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+    private val appContainer: AppContainer by lazy {
+        AppContainer(applicationContext)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        lifecycleScope.launch {
+            appContainer.repository.seedIfEmpty()
+        }
         enableEdgeToEdge()
         setContent {
             SmartManeyTheme {
-                AppNavHost(modifier = Modifier.fillMaxSize())
+                AppNavHost(Modifier.fillMaxSize(), appContainer)
             }
         }
     }

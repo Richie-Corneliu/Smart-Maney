@@ -15,8 +15,10 @@ SmartManey is a single-module Android app using Jetpack Compose.
 - Monthly recap is shown through `expense_history_route` with mode argument `monthly_recap`.
 - Login button navigates to dashboard.
 - Logout action in dashboard navigates back to login.
-- Dashboard keeps local reducer-driven UI state (`selectedTab`, `monthlyBudget`) in `AppState.kt`.
-- Wallet uses local reducer-driven state in `app/src/main/java/com/kelompok4/smartmaney/ui/wallet/WalletState.kt` and UI in `app/src/main/java/com/kelompok4/smartmaney/ui/wallet/WalletScreen.kt`.
+- `MainActivity` initializes `AppContainer`, seeds Room data, and passes dependencies to `AppNavHost`.
+- Persistence uses Room (`data/local`) and repository orchestration (`data/repository/SmartManeyRepository.kt`).
+- Screen data flows through ViewModels in `app/src/main/java/com/kelompok4/smartmaney/viewmodel/`.
+- Transaction detail/edit screens use ID-based navigation routes backed by Room rows.
 
 ## Quick Run
 

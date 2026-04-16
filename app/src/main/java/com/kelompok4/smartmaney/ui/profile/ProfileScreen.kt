@@ -21,10 +21,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -39,10 +35,10 @@ import com.kelompok4.smartmaney.ui.theme.SmartManeyTheme
 @Composable
 fun ProfileScreen(
     modifier: Modifier = Modifier,
+    uiState: ProfileUiState,
+    onAction: (ProfileAction) -> Unit,
     onLogoutClick: () -> Unit = {}
 ) {
-    var uiState by remember { mutableStateOf(ProfileUiState()) }
-
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
@@ -79,7 +75,7 @@ fun ProfileScreen(
                         OutlinedTextField(
                             value = uiState.fullName,
                             onValueChange = {
-                                uiState = reduceProfileState(uiState, ProfileAction.UpdateFullName(it))
+                                onAction(ProfileAction.UpdateFullName(it))
                             },
                             label = { Text(stringResource(R.string.profile_full_name)) },
                             modifier = Modifier.fillMaxWidth(),
@@ -88,7 +84,7 @@ fun ProfileScreen(
                         OutlinedTextField(
                             value = uiState.email,
                             onValueChange = {
-                                uiState = reduceProfileState(uiState, ProfileAction.UpdateEmail(it))
+                                onAction(ProfileAction.UpdateEmail(it))
                             },
                             label = { Text(stringResource(R.string.profile_email)) },
                             modifier = Modifier.fillMaxWidth(),
@@ -115,7 +111,7 @@ fun ProfileScreen(
                             title = stringResource(R.string.profile_enable_notifications),
                             checked = uiState.notificationsEnabled,
                             onCheckedChange = {
-                                uiState = reduceProfileState(uiState, ProfileAction.ToggleNotifications(it))
+                                onAction(ProfileAction.ToggleNotifications(it))
                             }
                         )
                     }
@@ -124,7 +120,7 @@ fun ProfileScreen(
 
             item {
                 Button(
-                    onClick = { uiState = reduceProfileState(uiState, ProfileAction.SaveChanges) },
+                    onClick = { onAction(ProfileAction.SaveChanges) },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(stringResource(R.string.profile_save_changes))
@@ -179,7 +175,10 @@ private fun PreferenceRow(
 @Composable
 private fun PreviewProfileScreen() {
     SmartManeyTheme {
-        ProfileScreen()
+        ProfileScreen(
+            uiState = ProfileUiState(),
+            onAction = {}
+        )
     }
 }
 

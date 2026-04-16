@@ -29,49 +29,4 @@ data class WalletUiState(
         }
 }
 
-sealed interface WalletAction {
-    data class AddTransaction(
-        val title: String,
-        val amount: Int,
-        val type: WalletTransactionType,
-        val createdAtMillis: Long = System.currentTimeMillis()
-    ) : WalletAction
-
-    data class RemoveTransaction(val transactionId: String) : WalletAction
-
-    data class AdjustBaseBalance(val delta: Int) : WalletAction
-}
-
-fun reduceWalletState(current: WalletUiState, action: WalletAction): WalletUiState {
-    return when (action) {
-        is WalletAction.AddTransaction -> {
-            val normalizedTitle = action.title.trim()
-            if (normalizedTitle.isBlank() || action.amount <= 0) {
-                current
-            } else {
-                current.copy(
-                    transactions = listOf(
-                        WalletTransaction(
-                            id = "${action.createdAtMillis}-${current.transactions.size}",
-                            title = normalizedTitle,
-                            amount = action.amount,
-                            type = action.type,
-                            createdAtMillis = action.createdAtMillis
-                        )
-                    ) + current.transactions
-                )
-            }
-        }
-
-        is WalletAction.RemoveTransaction -> {
-            current.copy(
-                transactions = current.transactions.filterNot { it.id == action.transactionId }
-            )
-        }
-
-        is WalletAction.AdjustBaseBalance -> {
-            current.copy(initialBalance = (current.initialBalance + action.delta).coerceAtLeast(0))
-        }
-    }
-}
 

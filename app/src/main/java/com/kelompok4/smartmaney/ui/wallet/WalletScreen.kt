@@ -29,7 +29,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -49,30 +48,19 @@ import java.util.Locale
 @Composable
 fun WalletScreen(
     modifier: Modifier = Modifier,
+    uiState: WalletUiState,
+    onAddTransaction: (String, Int, WalletTransactionType) -> Unit,
+    onDeleteTransaction: (String) -> Unit,
+    onAdjustBaseBalance: (Int) -> Unit
 ) {
-    var uiState by remember {
-        mutableStateOf(
-            WalletUiState(
-                initialBalance = 2_000_000,
-                transactions = emptyList()
-            )
-        )
-    }
     var titleInput by rememberSaveable { mutableStateOf("") }
     var amountInput by rememberSaveable { mutableStateOf("") }
 
     fun addTransaction(type: WalletTransactionType) {
         val amount = amountInput.toIntOrNull() ?: return
-        val previous = uiState
-        uiState = reduceWalletState(
-            uiState,
-            WalletAction.AddTransaction(
-                title = titleInput,
-                amount = amount,
-                type = type
-            )
-        )
-        if (uiState != previous) {
+        val normalizedTitle = titleInput.trim()
+        if (normalizedTitle.isNotBlank()) {
+            onAddTransaction(normalizedTitle, amount, type)
             titleInput = ""
             amountInput = ""
         }
@@ -103,10 +91,10 @@ fun WalletScreen(
                     baseBalance = uiState.initialBalance,
                     currentBalance = uiState.currentBalance,
                     onDecreaseBase = {
-                        uiState = reduceWalletState(uiState, WalletAction.AdjustBaseBalance(-100_000))
+                        onAdjustBaseBalance(-100_000)
                     },
                     onIncreaseBase = {
-                        uiState = reduceWalletState(uiState, WalletAction.AdjustBaseBalance(100_000))
+                        onAdjustBaseBalance(100_000)
                     }
                 )
             }
@@ -181,7 +169,7 @@ fun WalletScreen(
                     WalletTransactionItem(
                         transaction = item,
                         onDeleteClick = {
-                            uiState = reduceWalletState(uiState, WalletAction.RemoveTransaction(item.id))
+                            onDeleteTransaction(item.id)
                         }
                     )
                 }
@@ -283,7 +271,23 @@ private fun formatCurrency(value: Int): String {
 @Composable
 private fun WalletScreenPreview() {
     SmartManeyTheme {
-        WalletScreen()
+        WalletScreen(
+            uiState = WalletUiState(
+                initialBalance = 2_000_000,
+                transactions = listOf(
+                    WalletTransaction(
+                        id = "preview-1",
+                        title = "Makan Siang",
+                        amount = 45_000,
+                        type = WalletTransactionType.Expense,
+                        createdAtMillis = System.currentTimeMillis()
+                    )
+                )
+            ),
+            onAddTransaction = { _, _, _ -> },
+            onDeleteTransaction = {},
+            onAdjustBaseBalance = {}
+        )
     }
 }
 

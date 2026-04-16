@@ -31,10 +31,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -61,9 +57,11 @@ import com.kelompok4.smartmaney.ui.theme.SmartManeyTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ExpenseHistoryScreen(modifier: Modifier = Modifier) {
-    val now = remember { ExpenseHistoryDummyData.transactions.first().timestampMillis }
-    var state by remember { mutableStateOf(buildExpenseHistoryState(ExpenseFilter.Daily, nowMillis = now)) }
+fun ExpenseHistoryScreen(
+    modifier: Modifier = Modifier,
+    uiState: ExpenseHistoryUiState,
+    onFilterSelected: (ExpenseFilter) -> Unit
+) {
 
     Scaffold(
         modifier = modifier,
@@ -81,12 +79,10 @@ fun ExpenseHistoryScreen(modifier: Modifier = Modifier) {
         }
     ){ innerPadding ->
         Column(Modifier.fillMaxSize().padding(innerPadding)) {
-            Tabs(selected = state.selectedFilter) {
-                state = reduceExpenseHistoryState(ExpenseHistoryAction.SelectFilter(it), nowMillis = now)
-            }
+            Tabs(selected = uiState.selectedFilter, onSelect = onFilterSelected)
             HorizontalDivider(color = SmDivider)
             LazyColumn(Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
-                state.groups.forEach { group ->
+                uiState.groups.forEach { group ->
                     item(group.headerLabel) {
                         Spacer(Modifier.height(14.dp))
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -146,8 +142,41 @@ private fun categoryVisual(category: ExpenseCategory): Triple<ImageVector, Color
     ExpenseCategory.Health -> Triple(Icons.Default.Medication, SmCategoryHealthBg, SmCategoryHealth)
 }
 
+private fun previewTransactions(now: Long): List<ExpenseTransaction> {
+    return listOf(
+        ExpenseTransaction(
+            id = "preview-1",
+            title = "Makan Siang",
+            categoryLabel = "Food & Beverages",
+            amount = 45_000,
+            timestampMillis = now,
+            timeLabel = "12:45",
+            category = ExpenseCategory.Food
+        ),
+        ExpenseTransaction(
+            id = "preview-2",
+            title = "Gojek Ke Kantor",
+            categoryLabel = "Transport",
+            amount = 20_000,
+            timestampMillis = now - 3_600_000L,
+            timeLabel = "08:15",
+            category = ExpenseCategory.Transport
+        )
+    )
+}
+
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun PreviewExpenseHistoryScreen() {
-    SmartManeyTheme { ExpenseHistoryScreen() }
+    val now = System.currentTimeMillis()
+    SmartManeyTheme {
+        ExpenseHistoryScreen(
+            uiState = buildExpenseHistoryState(
+                selectedFilter = ExpenseFilter.Daily,
+                nowMillis = now,
+                source = previewTransactions(now)
+            ),
+            onFilterSelected = {}
+        )
+    }
 }

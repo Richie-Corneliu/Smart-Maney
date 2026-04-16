@@ -27,9 +27,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,12 +40,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.kelompok4.smartmaney.AppContainer
 import com.kelompok4.smartmaney.DashboardAction
 import com.kelompok4.smartmaney.DashboardTab
 import com.kelompok4.smartmaney.DashboardUiState
@@ -50,6 +55,7 @@ import com.kelompok4.smartmaney.reduceDashboardState
 import com.kelompok4.smartmaney.ui.budgetplanning.BudgetPlanningScreen
 import com.kelompok4.smartmaney.ui.dashboard.DashboardScreen
 import com.kelompok4.smartmaney.ui.detail.TransactionDetailScreen
+import com.kelompok4.smartmaney.ui.expensehistory.ExpenseFilter
 import com.kelompok4.smartmaney.ui.expensehistory.ExpenseHistoryScreen
 import com.kelompok4.smartmaney.ui.login.LoginScreen
 import com.kelompok4.smartmaney.ui.profile.ProfileScreen
@@ -58,17 +64,39 @@ import com.kelompok4.smartmaney.ui.theme.SmMuted
 import com.kelompok4.smartmaney.ui.theme.SmPrimary
 import com.kelompok4.smartmaney.ui.transaction.EditTransactionScreen
 import com.kelompok4.smartmaney.ui.wallet.WalletScreen
+import com.kelompok4.smartmaney.viewmodel.BudgetPlanningViewModel
+import com.kelompok4.smartmaney.viewmodel.DashboardViewModel
+import com.kelompok4.smartmaney.viewmodel.ExpenseHistoryViewModel
+import com.kelompok4.smartmaney.viewmodel.ProfileViewModel
+import com.kelompok4.smartmaney.viewmodel.SmartManeyViewModelFactory
+import com.kelompok4.smartmaney.viewmodel.TransactionDetailViewModel
+import com.kelompok4.smartmaney.viewmodel.WalletViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun AppNavHost(
     modifier: Modifier = Modifier,
+    appContainer: AppContainer,
     navController: NavHostController = rememberNavController()
 ) {
     var dashboardState by remember { mutableStateOf(DashboardUiState()) }
+    val scope = rememberCoroutineScope()
 
-    // --- STATE SEMENTARA (IN-MEMORY) UNTUK TRANSAKSI ---
-    var currentNominal by remember { mutableStateOf("Rp 350,000") }
-    var currentCatatan by remember { mutableStateOf("Mokel with arek arek di gacoan saat puasa") }
+    val baseFactory = remember(appContainer) {
+        SmartManeyViewModelFactory(appContainer.repository)
+    }
+
+    val dashboardViewModel: DashboardViewModel = viewModel(factory = baseFactory)
+    val walletViewModel: WalletViewModel = viewModel(factory = baseFactory)
+    val expenseHistoryViewModel: ExpenseHistoryViewModel = viewModel(factory = baseFactory)
+    val budgetPlanningViewModel: BudgetPlanningViewModel = viewModel(factory = baseFactory)
+    val profileViewModel: ProfileViewModel = viewModel(factory = baseFactory)
+
+    val dashboardSummary by dashboardViewModel.summary.collectAsState()
+    val walletUiState by walletViewModel.uiState.collectAsState()
+    val expenseHistoryUiState by expenseHistoryViewModel.uiState.collectAsState()
+    val budgetPlanningUiState by budgetPlanningViewModel.uiState.collectAsState()
+    val profileUiState by profileViewModel.uiState.collectAsState()
 
     fun navigateToTab(tab: DashboardTab) {
         dashboardState = reduceDashboardState(dashboardState, DashboardAction.SelectTab(tab))
@@ -113,10 +141,10 @@ fun AppNavHost(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding),
-                    userName = "Andra",
-                    monthlySpent = 4_500_000,
-                    monthlyBudget = dashboardState.monthlyBudget,
-                    budgetProgress = 0.64f,
+                    userName = dashboardSummary.userName,
+                    monthlySpent = dashboardSummary.monthlySpent,
+                    monthlyBudget = dashboardSummary.monthlyBudget,
+                    budgetProgress = dashboardSummary.budgetProgress,
                     selectedTab = dashboardState.selectedTab,
                     onAdjustBudgetClick = {
                         navController.navigate(AppDestinations.BUDGET_PLANNING_ROUTE)
@@ -131,6 +159,7 @@ fun AppNavHost(
                     onScanReceiptClick = { navController.navigate(AppDestinations.SCAN_RECEIPT_ROUTE) },
                     showNavigationBar = false,
                     onMonthlyRecapClick = {
+                        expenseHistoryViewModel.selectFilter(ExpenseFilter.Monthly)
                         navController.navigate(
                             AppDestinations.expenseHistoryRoute(
                                 AppDestinations.EXPENSE_HISTORY_MODE_MONTHLY_RECAP
@@ -147,11 +176,11 @@ fun AppNavHost(
                     navController.popBackStack()
                 },
                 onPhotoSaved = {
-                    // KETIKA FOTO SUKSES, LANGSUNG ARAHKAN KE LAYAR DETAIL
-                    navController.navigate("transaction_detail_route") {
-                        // Opsi tambahan: Hapus layar kamera dari tumpukan (backstack)
-                        // supaya kalau user tekan tombol 'Back' di layar detail, dia nggak balik ke kamera lagi.
-                        popUpTo("scan_receipt_route") { inclusive = true }
+                    scope.launch {
+                        val transactionId = appContainer.repository.createDraftTransactionFromReceipt()
+                        navController.navigate(AppDestinations.transactionDetailRoute(transactionId)) {
+                            popUpTo(AppDestinations.SCAN_RECEIPT_ROUTE) { inclusive = true }
+                        }
                     }
                 }
             )
@@ -165,7 +194,13 @@ fun AppNavHost(
                     defaultValue = AppDestinations.EXPENSE_HISTORY_MODE_DEFAULT
                 }
             )
-        ) {
+        ) { backStackEntry ->
+            val mode = backStackEntry.arguments?.getString(AppDestinations.EXPENSE_HISTORY_MODE_ARG)
+            LaunchedEffect(mode) {
+                if (mode == AppDestinations.EXPENSE_HISTORY_MODE_MONTHLY_RECAP) {
+                    expenseHistoryViewModel.selectFilter(ExpenseFilter.Monthly)
+                }
+            }
             syncTab(DashboardTab.Reports)
             AppShellScaffold(
                 selectedTab = dashboardState.selectedTab,
@@ -175,7 +210,9 @@ fun AppNavHost(
                 ExpenseHistoryScreen(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(bottom = innerPadding.calculateBottomPadding())
+                        .padding(bottom = innerPadding.calculateBottomPadding()),
+                    uiState = expenseHistoryUiState,
+                    onFilterSelected = expenseHistoryViewModel::selectFilter
                 )
             }
         }
@@ -191,8 +228,12 @@ fun AppNavHost(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(bottom = innerPadding.calculateBottomPadding()),
+                    uiState = budgetPlanningUiState,
                     onBackClick = {
                         navigateToTab(DashboardTab.Home)
+                    },
+                    onBudgetUpdated = { newBudget ->
+                        dashboardViewModel.updateMonthlyBudget(newBudget)
                     }
                 )
             }
@@ -208,7 +249,12 @@ fun AppNavHost(
                 WalletScreen(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(bottom = innerPadding.calculateBottomPadding()))
+                        .padding(bottom = innerPadding.calculateBottomPadding()),
+                    uiState = walletUiState,
+                    onAddTransaction = walletViewModel::addTransaction,
+                    onDeleteTransaction = walletViewModel::deleteTransaction,
+                    onAdjustBaseBalance = walletViewModel::adjustInitialBalance
+                )
             }
         }
 
@@ -223,6 +269,8 @@ fun AppNavHost(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(bottom = innerPadding.calculateBottomPadding()),
+                    uiState = profileUiState,
+                    onAction = profileViewModel::dispatch,
                     onLogoutClick = {
                         navController.navigate(AppDestinations.LOGIN_ROUTE) {
                             popUpTo(AppDestinations.DASHBOARD_ROUTE) { inclusive = true }
@@ -233,30 +281,55 @@ fun AppNavHost(
             }
         }
 
-        composable(route = "transaction_detail_route") {
+        composable(
+            route = AppDestinations.TRANSACTION_DETAIL_ROUTE_PATTERN,
+            arguments = listOf(
+                navArgument(AppDestinations.TRANSACTION_ID_ARG) {
+                    type = NavType.LongType
+                }
+            )
+        ) { backStackEntry ->
+            val transactionId = backStackEntry.arguments?.getLong(AppDestinations.TRANSACTION_ID_ARG) ?: 0L
+            val detailFactory = remember(transactionId) {
+                SmartManeyViewModelFactory(appContainer.repository, transactionId)
+            }
+            val detailViewModel: TransactionDetailViewModel = viewModel(factory = detailFactory)
+            val detailState by detailViewModel.uiState.collectAsState()
+
             TransactionDetailScreen(
-                nominal = currentNominal,   // Masukkan state ke layar detail
-                catatan = currentCatatan,   // Masukkan state ke layar detail
+                amount = detailState.amount,
+                note = detailState.note,
+                category = detailState.category.ifBlank { "Lain-lain" },
+                paymentMethod = detailState.paymentMethod.ifBlank { "Cash" },
+                createdAtMillis = detailState.createdAtMillis,
                 onBackClick = { navController.popBackStack() },
-                onSaveClick = { /* Nanti untuk db beneran */ },
                 onEditClick = {
-                    // Loncat ke layar edit saat ditekan
-                    navController.navigate("edit_transaction_route")
+                    navController.navigate(AppDestinations.transactionEditRoute(transactionId))
                 }
             )
         }
 
-        // 2. TAMBAHKAN RUTE EDIT BARU
-        composable(route = "edit_transaction_route") {
+        composable(
+            route = AppDestinations.TRANSACTION_EDIT_ROUTE_PATTERN,
+            arguments = listOf(
+                navArgument(AppDestinations.TRANSACTION_ID_ARG) {
+                    type = NavType.LongType
+                }
+            )
+        ) { backStackEntry ->
+            val transactionId = backStackEntry.arguments?.getLong(AppDestinations.TRANSACTION_ID_ARG) ?: 0L
+            val detailFactory = remember(transactionId) {
+                SmartManeyViewModelFactory(appContainer.repository, transactionId)
+            }
+            val detailViewModel: TransactionDetailViewModel = viewModel(factory = detailFactory)
+            val detailState by detailViewModel.uiState.collectAsState()
+
             EditTransactionScreen(
-                initialNominal = currentNominal,
-                initialNote = currentCatatan,
+                initialAmount = detailState.amount,
+                initialNote = detailState.note,
                 onBackClick = { navController.popBackStack() },
-                onSaveClick = { newNominal, newNote ->
-                    // Saat user klik simpan, perbarui state memori kita
-                    currentNominal = newNominal
-                    currentCatatan = newNote
-                    // Lalu kembalikan user ke layar detail
+                onSaveClick = { newAmount, newNote ->
+                    detailViewModel.updateTransaction(newAmount, newNote)
                     navController.popBackStack()
                 }
             )
