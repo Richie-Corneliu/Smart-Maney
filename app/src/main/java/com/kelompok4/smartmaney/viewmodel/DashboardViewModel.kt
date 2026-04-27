@@ -19,7 +19,8 @@ class DashboardViewModel(
             userName = "User",
             monthlySpent = 0,
             monthlyBudget = 0,
-            budgetProgress = 0f
+            budgetProgress = 0f,
+            spendingByCategory = emptyMap()
         )
     )
 

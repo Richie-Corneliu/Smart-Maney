@@ -3,7 +3,6 @@ package com.kelompok4.smartmaney.ui.login
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,37 +14,36 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kelompok4.smartmaney.R
-import com.kelompok4.smartmaney.ui.theme.SmDivider
 import com.kelompok4.smartmaney.ui.theme.SmPrimary
-import com.kelompok4.smartmaney.ui.theme.SmSecondaryButton
 import com.kelompok4.smartmaney.ui.theme.SmSurfaceSoft
 import com.kelompok4.smartmaney.ui.theme.SmTerms
 import com.kelompok4.smartmaney.ui.theme.SmTextHeading
 import com.kelompok4.smartmaney.ui.theme.SmartManeyTheme
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.withStyle
 
 @Composable
 fun LoginScreen(
     modifier: Modifier = Modifier,
     onLoginClick: () -> Unit = {},
     onRegisterClick: () -> Unit = {},
-    onGoogleClick: () -> Unit = {}
+    onGoogleClick: () -> Unit = {},
+    isGoogleSigningIn: Boolean = false,
+    googleSignInError: String? = null
 ) {
     Box(
         modifier = modifier
@@ -82,47 +80,27 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(26.dp))
 
                 ActionButton(
-                    label = stringResource(R.string.login_action),
-                    containerColor = SmPrimary,
-                    contentColor = Color.Black,
-                    onClick = onLoginClick
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                ActionButton(
-                    label = stringResource(R.string.register_action),
-                    containerColor = SmSecondaryButton,
-                    contentColor = SmTextHeading,
-                    onClick = onRegisterClick
-                )
-                Spacer(modifier = Modifier.height(18.dp))
-                Row(
-                    modifier  = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    HorizontalDivider(
-                        modifier = Modifier.weight(1f),
-                        color = SmDivider
-                    )
-                    Text(
-                        text = stringResource(R.string.or_separator),
-                        color = SmDivider,
-                        style = MaterialTheme.typography.labelLarge,
-                        letterSpacing = 2.sp
-                    )
-                    HorizontalDivider(
-                        modifier = Modifier.weight(1f),
-                        color = SmDivider
-                    )
-                }
-                Spacer(modifier = Modifier.height(18.dp))
-
-                ActionButton(
-                    label = stringResource(R.string.continue_with_google),
+                    label = if (isGoogleSigningIn) {
+                        stringResource(R.string.google_signing_in)
+                    } else {
+                        stringResource(R.string.continue_with_google)
+                    },
                     containerColor = Color.White,
                     contentColor = SmTextHeading,
                     prefix = stringResource(R.string.google_icon_placeholder),
-                    onClick = onGoogleClick
+                    onClick = onGoogleClick,
+                    enabled = !isGoogleSigningIn
                 )
+
+                if (!googleSignInError.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = googleSignInError,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(26.dp))
                 Text(
@@ -156,10 +134,12 @@ private fun ActionButton(
     contentColor: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    prefix: String? = null
+    prefix: String? = null,
+    enabled: Boolean = true
 ) {
     Button(
         onClick = onClick,
+        enabled = enabled,
         modifier = modifier
             .fillMaxWidth()
             .height(52.dp),

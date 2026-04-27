@@ -6,6 +6,9 @@
     <string name="register_action">Register</string>
     <string name="or_separator">OR</string>
     <string name="continue_with_google">Continue with Google</string>
+    <string name="google_signing_in">Signing in...</string>
+    <string name="google_sign_in_failed">Google sign in failed. Please try again.</string>
+    <string name="google_sign_in_cancelled">Google sign in cancelled.</string>
     <string name="google_icon_placeholder">G</string>
     <string name="terms_prefix">By continuing, you agree to our</string>
     <string name="terms_of_service">Terms of Service</string>
@@ -23,7 +26,8 @@
     <string name="category_rent">Rent &amp; Bills</string>
     <string name="category_transport">Transport</string>
     <string name="total_label">TOTAL</string>
-    <string name="total_items">3 Items</string>
+    <string name="total_items_count">%1$d Items</string>
+    <string name="spending_distribution_empty">No expense data this month yet.</string>
     <string name="quick_insights">Quick Insights</string>
     <string name="scheduled_bills">Scheduled Bills</string>
     <string name="scheduled_bills_subtitle">3 bills due soon</string>
@@ -43,6 +47,7 @@
     <string name="profile_section_preferences">Preferences</string>
     <string name="profile_full_name">Full Name</string>
     <string name="profile_email">Email</string>
+    <string name="profile_email_locked_hint">Email is managed by your signed-in account.</string>
     <string name="profile_enable_notifications">Enable Notifications</string>
     <string name="profile_dark_mode">Dark Mode</string>
     <string name="profile_save_changes">Save Changes</string>

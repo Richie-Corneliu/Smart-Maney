@@ -60,8 +60,13 @@ class SmartManeyRepository(
     val dashboardSummary: Flow<DashboardSummary> = combine(
         profileUiState,
         budgetDao.observeBudgetMeta(),
-        observeMonthlyExpenseTotal()
-    ) { profile, budgetMeta, monthlyExpense ->
+        observeCurrentMonthCategorySpendMap()
+    ) { profile, budgetMeta, spentByCategory ->
+        val normalizedSpentByCategory = spentByCategory.entries
+            .groupBy(keySelector = { normalizeBudgetCategoryName(it.key) }, valueTransform = { it.value })
+            .mapValues { (_, values) -> values.sum() }
+
+        val monthlyExpense = normalizedSpentByCategory.values.sum()
         val monthlyBudget = budgetMeta?.totalBudget ?: DEFAULT_MONTHLY_BUDGET
         val progress = if (monthlyBudget > 0) {
             (monthlyExpense.toFloat() / monthlyBudget.toFloat()).coerceIn(0f, 1f)
@@ -72,7 +77,8 @@ class SmartManeyRepository(
             userName = profile.fullName.ifBlank { "User" },
             monthlySpent = monthlyExpense,
             monthlyBudget = monthlyBudget,
-            budgetProgress = progress
+            budgetProgress = progress,
+            spendingByCategory = normalizedSpentByCategory
         )
     }
 
@@ -81,16 +87,20 @@ class SmartManeyRepository(
         budgetDao.observeBudgetCategories(),
         observeCurrentMonthCategorySpendMap()
     ) { budgetMeta, categories, spentByCategory ->
+        val normalizedSpentByCategory = spentByCategory.entries
+            .groupBy(keySelector = { normalizeBudgetCategoryName(it.key) }, valueTransform = { it.value })
+            .mapValues { (_, values) -> values.sum() }
+
         val totalBudget = budgetMeta?.totalBudget ?: DEFAULT_MONTHLY_BUDGET
         val categoryBudgets = categories.map { entity ->
             BudgetCategoryItem(
                 id = entity.id,
                 name = entity.name,
                 allocated = entity.allocated,
-                spent = spentByCategory[entity.name].orZero()
+                spent = normalizedSpentByCategory[normalizeBudgetCategoryName(entity.name)].orZero()
             )
         }
-        val totalSpent = categoryBudgets.sumOf { it.spent }
+        val totalSpent = normalizedSpentByCategory.values.sum()
         BudgetPlanningUiState(
             totalBudget = totalBudget,
             totalSpent = totalSpent,
@@ -104,7 +114,7 @@ class SmartManeyRepository(
                 ExpenseTransaction(
                     id = row.id.toString(),
                     title = row.title,
-                    categoryLabel = row.category,
+                    categoryLabel = normalizeDisplayCategoryLabel(row.category),
                     amount = row.amount,
                     timestampMillis = row.createdAtMillis,
                     timeLabel = timeFormatter.format(Date(row.createdAtMillis)),
@@ -129,7 +139,7 @@ class SmartManeyRepository(
                     title = "Gaji Bulanan",
                     amount = 6_500_000,
                     type = TRANSACTION_TYPE_INCOME,
-                    category = "Income",
+                    category = DEFAULT_INCOME_CATEGORY,
                     note = "Auto seeded data",
                     paymentMethod = "Bank Transfer",
                     createdAtMillis = System.currentTimeMillis() - 86_400_000L
@@ -141,7 +151,7 @@ class SmartManeyRepository(
                         title = item.title,
                         amount = item.amount,
                         type = TRANSACTION_TYPE_EXPENSE,
-                        category = item.categoryLabel,
+                        category = normalizeBudgetCategoryName(item.categoryLabel),
                         note = "",
                         paymentMethod = "E-Wallet",
                         createdAtMillis = item.timestampMillis
@@ -193,7 +203,11 @@ class SmartManeyRepository(
                 title = normalizedTitle,
                 amount = amount,
                 type = transactionType,
-                category = if (transactionType == TRANSACTION_TYPE_EXPENSE) "Lain-lain" else "Income",
+                category = if (transactionType == TRANSACTION_TYPE_EXPENSE) {
+                    DEFAULT_EXPENSE_BUDGET_CATEGORY
+                } else {
+                    DEFAULT_INCOME_CATEGORY
+                },
                 note = "",
                 paymentMethod = "Cash",
                 createdAtMillis = System.currentTimeMillis()
@@ -223,6 +237,24 @@ class SmartManeyRepository(
         )
     }
 
+    suspend fun syncProfileFromAuthenticatedUser(
+        authDisplayName: String?,
+        authEmail: String?
+    ) {
+        val current = profileDao.getProfile()
+        val currentState = current?.toProfileUiState() ?: DEFAULT_PROFILE
+        val mergedName = authDisplayName?.trim().takeUnless { it.isNullOrBlank() } ?: currentState.fullName
+        val mergedEmail = authEmail?.trim().takeUnless { it.isNullOrBlank() } ?: currentState.email
+        profileDao.upsertProfile(
+            ProfileEntity(
+                fullName = mergedName,
+                email = mergedEmail,
+                notificationsEnabled = currentState.notificationsEnabled,
+                darkModeEnabled = currentState.darkModeEnabled
+            )
+        )
+    }
+
     suspend fun updateMonthlyBudget(totalBudget: Int) {
         val safeBudget = totalBudget.coerceAtLeast(0)
         budgetDao.upsertBudgetMeta(BudgetMetaEntity(totalBudget = safeBudget))
@@ -234,7 +266,7 @@ class SmartManeyRepository(
                 title = "Receipt Draft",
                 amount = 0,
                 type = TRANSACTION_TYPE_EXPENSE,
-                category = "Lain-lain",
+                category = DEFAULT_EXPENSE_BUDGET_CATEGORY,
                 note = "",
                 paymentMethod = "E-Wallet",
                 createdAtMillis = System.currentTimeMillis()
@@ -277,13 +309,28 @@ class SmartManeyRepository(
     }
 
     private fun TransactionEntity.toExpenseCategory(): ExpenseCategory {
-        return when (category.lowercase(Locale.ROOT)) {
-            "food", "food & beverages", "makanan & minuman" -> ExpenseCategory.Food
-            "transport", "transportasi" -> ExpenseCategory.Transport
-            "shopping" -> ExpenseCategory.Shopping
-            "health", "kesehatan" -> ExpenseCategory.Health
-            else -> ExpenseCategory.Food
+        return when (category.trim().lowercase(Locale.ROOT)) {
+            "food", "food & beverages", "makanan", "makanan & minuman", "kuliner" -> ExpenseCategory.Food
+            "transport", "transportation", "transportasi", "commute" -> ExpenseCategory.Transport
+            "health", "healthcare", "kesehatan", "medical", "vitamin", "obat" -> ExpenseCategory.Health
+            else -> ExpenseCategory.Shopping
         }
+    }
+
+    private fun normalizeBudgetCategoryName(rawCategory: String): String {
+        return when (rawCategory.trim().lowercase(Locale.ROOT)) {
+            "food", "food & beverages", "makanan", "makanan & minuman", "kuliner" -> "Makanan & Minuman"
+            "transport", "transportation", "transportasi", "commute" -> "Transportasi"
+            "shopping", "belanja", "entertainment", "hiburan" -> "Hiburan"
+            "rent", "housing", "tempat tinggal", "accommodation" -> "Tempat Tinggal"
+            "lain-lain", "other", "others", "misc", "miscellaneous" -> "Lain-lain"
+            "income", "pemasukan" -> DEFAULT_INCOME_CATEGORY
+            else -> "Lain-lain"
+        }
+    }
+
+    private fun normalizeDisplayCategoryLabel(rawCategory: String): String {
+        return normalizeBudgetCategoryName(rawCategory)
     }
 
     private fun ProfileEntity.toProfileUiState(): ProfileUiState {
@@ -317,6 +364,8 @@ class SmartManeyRepository(
     companion object {
         private const val TRANSACTION_TYPE_INCOME = "INCOME"
         private const val TRANSACTION_TYPE_EXPENSE = "EXPENSE"
+        private const val DEFAULT_INCOME_CATEGORY = "Income"
+        private const val DEFAULT_EXPENSE_BUDGET_CATEGORY = "Lain-lain"
         private const val DEFAULT_INITIAL_BALANCE = 2_000_000
         private const val DEFAULT_MONTHLY_BUDGET = 7_000_000
 
@@ -335,7 +384,8 @@ data class DashboardSummary(
     val userName: String,
     val monthlySpent: Int,
     val monthlyBudget: Int,
-    val budgetProgress: Float
+    val budgetProgress: Float,
+    val spendingByCategory: Map<String, Int>
 )
 
 

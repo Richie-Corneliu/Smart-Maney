@@ -40,5 +40,14 @@ class ProfileViewModel(
             }
         }
     }
+
+    fun syncAuthenticatedProfile(fullName: String?, email: String?) {
+        viewModelScope.launch {
+            repository.syncProfileFromAuthenticatedUser(
+                authDisplayName = fullName,
+                authEmail = email
+            )
+        }
+    }
 }
 

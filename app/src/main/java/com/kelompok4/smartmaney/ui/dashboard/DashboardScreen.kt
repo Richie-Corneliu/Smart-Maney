@@ -53,7 +53,9 @@ import androidx.compose.ui.unit.dp
 import com.kelompok4.smartmaney.DashboardTab
 import com.kelompok4.smartmaney.R
 import com.kelompok4.smartmaney.ui.theme.SmCategoryFood
+import com.kelompok4.smartmaney.ui.theme.SmCategoryHealth
 import com.kelompok4.smartmaney.ui.theme.SmCategoryRent
+import com.kelompok4.smartmaney.ui.theme.SmCategoryShopping
 import com.kelompok4.smartmaney.ui.theme.SmCategoryTransport
 import com.kelompok4.smartmaney.ui.theme.SmDivider
 import com.kelompok4.smartmaney.ui.theme.SmHeader
@@ -79,6 +81,7 @@ fun DashboardScreen(
     monthlySpent: Int,
     monthlyBudget: Int,
     budgetProgress: Float,
+    spendingByCategory: Map<String, Int>,
     selectedTab: DashboardTab,
     onAdjustBudgetClick: () -> Unit,
     onTabSelected: (DashboardTab) -> Unit,
@@ -87,11 +90,17 @@ fun DashboardScreen(
     onMonthlyRecapClick: () -> Unit,
     showNavigationBar: Boolean = true
 ) {
-    val categories = listOf(
-        SpendingCategory(stringResource(R.string.category_food), 0.45f, SmCategoryFood),
-        SpendingCategory(stringResource(R.string.category_rent), 0.25f, SmCategoryRent),
-        SpendingCategory(stringResource(R.string.category_transport), 0.30f, SmCategoryTransport)
-    )
+    val totalSpent = spendingByCategory.values.sum()
+    val categories = spendingByCategory.entries
+        .filter { it.value > 0 }
+        .sortedByDescending { it.value }
+        .map { entry ->
+            SpendingCategory(
+                name = entry.key,
+                share = if (totalSpent > 0) entry.value.toFloat() / totalSpent.toFloat() else 0f,
+                color = colorForCategory(entry.key)
+            )
+        }
 
     if (showNavigationBar) {
         Scaffold(
@@ -325,29 +334,40 @@ private fun DistributionCard(categories: List<SpendingCategory>) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            DonutChart(categories = categories)
-            Spacer(modifier = Modifier.width(28.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                categories.forEach { item ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(10.dp)
-                                .clip(CircleShape)
-                                .background(item.color)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "${item.name} (${(item.share * 100).toInt()}%)",
-                            color = MaterialTheme.colorScheme.onSurface,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
+        if (categories.isEmpty()) {
+            Text(
+                text = stringResource(R.string.spending_distribution_empty),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                color = SmMuted,
+                style = MaterialTheme.typography.bodyLarge
+            )
+        } else {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                DonutChart(categories = categories)
+                Spacer(modifier = Modifier.width(28.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    categories.forEach { item ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .clip(CircleShape)
+                                    .background(item.color)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "${item.name} (${(item.share * 100).toInt()}%)",
+                                color = MaterialTheme.colorScheme.onSurface,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
                     }
                 }
             }
@@ -379,12 +399,23 @@ private fun DonutChart(categories: List<SpendingCategory>) {
                 color = SmMuted
             )
             Text(
-                text = stringResource(R.string.total_items),
+                text = stringResource(R.string.total_items_count, categories.size),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = SmTextPrimary
             )
         }
+    }
+}
+
+private fun colorForCategory(category: String): Color {
+    return when (category.trim().lowercase(Locale.ROOT)) {
+        "food", "food & beverages", "makanan", "makanan & minuman", "kuliner" -> SmCategoryFood
+        "rent", "housing", "tempat tinggal", "accommodation", "rent & bills", "tagihan" -> SmCategoryRent
+        "transport", "transportation", "transportasi", "commute" -> SmCategoryTransport
+        "shopping", "belanja", "hiburan", "entertainment" -> SmCategoryShopping
+        "health", "healthcare", "kesehatan", "medical", "vitamin", "obat" -> SmCategoryHealth
+        else -> SmPrimary
     }
 }
 
@@ -509,6 +540,11 @@ private fun DashboardScreenPreview() {
             monthlySpent = 4_500_000,
             monthlyBudget = 7_000_000,
             budgetProgress = 0.64f,
+            spendingByCategory = mapOf(
+                "Makanan & Minuman" to 2_025_000,
+                "Tempat Tinggal" to 1_125_000,
+                "Transportasi" to 1_350_000
+            ),
             selectedTab = DashboardTab.Home,
             onAdjustBudgetClick = {},
             onTabSelected = {},

@@ -10,10 +10,11 @@
 - Entry point: `MainActivity.onCreate()` calls `enableEdgeToEdge()` then `setContent { ... }`.
 - Compose tree starts with `SmartManeyTheme { AppNavHost(...) }` in `MainActivity.kt`.
 - Theme boundary is centralized in `ui/theme/Theme.kt`; keep app-wide color/typography decisions there.
-- `SmartManeyTheme` uses dynamic color on Android 12+ (`Build.VERSION_CODES.S`) and falls back to static palettes.
+- `SmartManeyTheme` supports dynamic color on Android 12+ (`Build.VERSION_CODES.S`) only when `dynamicColor = true`; default usage keeps static palettes (`ui/theme/Theme.kt`).
 - Navigation graph is defined in `app/src/main/java/com/kelompok4/smartmaney/navigation/AppNavHost.kt`.
-- Route constants are centralized in `app/src/main/java/com/kelompok4/smartmaney/navigation/AppDestinations.kt` (for example `login`, `dashboard`, `wallet_route`, `scan_receipt_route`, `expense_history_route`, `budget_planning_route`). Monthly recap uses `expense_history_route` with mode argument `monthly_recap`.
+- Route constants are centralized in `app/src/main/java/com/kelompok4/smartmaney/navigation/AppDestinations.kt` (for example `login`, `dashboard`, `wallet_route`, `scan_receipt_route`, `expense_history_route`, `budget_planning_route`, `profile_route`, and argument-based transaction routes). Monthly recap uses `expense_history_route` with mode argument `monthly_recap`.
 - Persistence now uses Room with `SmartManeyDatabase` (`app/src/main/java/com/kelompok4/smartmaney/data/local/SmartManeyDatabase.kt`) and repository orchestration in `data/repository/SmartManeyRepository.kt`.
+- Scan receipt handoff now creates a draft transaction via `repository.createDraftTransactionFromReceipt()` before navigating to transaction detail (`AppNavHost.kt`, `SmartManeyRepository.kt`).
 - Screen state is driven by ViewModels under `app/src/main/java/com/kelompok4/smartmaney/viewmodel/` and consumed in `AppNavHost.kt`.
 
 ## Build/Test Workflows
@@ -32,7 +33,7 @@
 - Gradle daemon toolchain metadata targets Java 21 for daemon resolution (`gradle/gradle-daemon-jvm.properties`).
 
 ## Code Patterns to Mirror
-- Keep composables small and previewable: see `LoginScreenPreview()` (`ui/login/LoginScreen.kt`), `DashboardScreenPreview()` (`ui/dashboard/DashboardScreen.kt`), `PreviewMonthlyRecap()` (`ui/monthlyreport/MonthlyRecapScreen.kt`), and `PreviewBudgetPlanning()` (`ui/budgetplanning/BudgetPlanningScreen.kt`).
+- Keep composables small and previewable: see `LoginScreenPreview()` (`ui/login/LoginScreen.kt`), `DashboardScreenPreview()` (`ui/dashboard/DashboardScreen.kt`), `WalletScreenPreview()` (`ui/wallet/WalletScreen.kt`), `PreviewExpenseHistoryScreen()` (`ui/expensehistory/ExpenseHistoryScreen.kt`), `PreviewProfileScreen()` (`ui/profile/ProfileScreen.kt`), and `PreviewBudgetPlanning()` (`ui/budgetplanning/BudgetPlanningScreen.kt`).
 - Wrap top-level UI in `SmartManeyTheme` instead of creating ad-hoc `MaterialTheme` instances.
 - Place design tokens under `app/src/main/java/com/kelompok4/smartmaney/ui/theme/` (`Color.kt`, `Type.kt`, `Theme.kt`).
 - Keep package naming consistent with `com.kelompok4.smartmaney` for new source sets and tests.
@@ -53,13 +54,14 @@
 - `MainActivity` hosts `AppNavHost()` inside `SmartManeyTheme` and remains the manifest launch entry point.
 - Current login actions are callback-based placeholders (`onLoginClick`, `onRegisterClick`, `onGoogleClick`) with no auth integration yet.
 - Dashboard UI now lives in `app/src/main/java/com/kelompok4/smartmaney/ui/dashboard/DashboardScreen.kt`.
-- App-level screen switching uses Navigation Compose in `app/src/main/java/com/kelompok4/smartmaney/navigation/AppNavHost.kt` (`login`, `dashboard`, `wallet_route`, `scan_receipt_route`, `expense_history_route`, `budget_planning_route`) with monthly recap rendered from `expense_history_route` mode `monthly_recap`.
+- App-level screen switching uses Navigation Compose in `app/src/main/java/com/kelompok4/smartmaney/navigation/AppNavHost.kt` (`login`, `dashboard`, `wallet_route`, `scan_receipt_route`, `expense_history_route`, `budget_planning_route`, `profile_route`) with monthly recap rendered from `expense_history_route` mode `monthly_recap`.
 - Wallet flow now lives in `app/src/main/java/com/kelompok4/smartmaney/ui/wallet/WalletScreen.kt` with Room-backed state model in `app/src/main/java/com/kelompok4/smartmaney/ui/wallet/WalletState.kt`.
 - Local dashboard UI state now tracks selected tab only in `app/src/main/java/com/kelompok4/smartmaney/AppState.kt`; budget values are repository-backed.
 - Expense history grouping/filter state lives in `app/src/main/java/com/kelompok4/smartmaney/ui/expensehistory/ExpenseHistoryState.kt` and is fed from repository flows.
 - Budget planning state lives in `app/src/main/java/com/kelompok4/smartmaney/ui/budgetplanning/BudgetPlanningState.kt`; seed data moved to repository seeding.
 - Scan receipt flow now lives in `app/src/main/java/com/kelompok4/smartmaney/ui/scanreceipt/ScanReceiptScreen.kt` with camera permission + gallery picker handling.
 - Profile flow now lives in `app/src/main/java/com/kelompok4/smartmaney/ui/profile/ProfileScreen.kt` with local reducer/state in `app/src/main/java/com/kelompok4/smartmaney/ui/profile/ProfileState.kt` and route `profile_route` wired through `AppNavHost.kt`.
+- Transaction detail/edit UI now lives under `app/src/main/java/com/kelompok4/smartmaney/ui/detail/` (`TransactionDetailScreen.kt`, `EditTransactionScreen.kt`) and is wired from Navigation Compose routes.
 - Room entities are under `app/src/main/java/com/kelompok4/smartmaney/data/local/entity/` and DAOs are under `app/src/main/java/com/kelompok4/smartmaney/data/local/dao/`.
 - `MainActivity` now creates `AppContainer`, seeds Room once via `repository.seedIfEmpty()`, and passes container into `AppNavHost`.
 - Transaction detail/edit navigation now uses route arguments via `transaction_detail_route/{transactionId}` and `edit_transaction_route/{transactionId}`.

@@ -37,7 +37,8 @@ fun ProfileScreen(
     modifier: Modifier = Modifier,
     uiState: ProfileUiState,
     onAction: (ProfileAction) -> Unit,
-    onLogoutClick: () -> Unit = {}
+    onLogoutClick: () -> Unit = {},
+    isEmailEditable: Boolean = true
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -88,8 +89,16 @@ fun ProfileScreen(
                             },
                             label = { Text(stringResource(R.string.profile_email)) },
                             modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
+                            singleLine = true,
+                            enabled = isEmailEditable
                         )
+                        if (!isEmailEditable) {
+                            Text(
+                                text = stringResource(R.string.profile_email_locked_hint),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }

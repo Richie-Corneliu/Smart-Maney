@@ -38,8 +38,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.credentials.ClearCredentialStateRequest
+import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialException
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -47,10 +54,17 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.GoogleAuthProvider
 import com.kelompok4.smartmaney.AppContainer
 import com.kelompok4.smartmaney.DashboardAction
 import com.kelompok4.smartmaney.DashboardTab
 import com.kelompok4.smartmaney.DashboardUiState
+import com.kelompok4.smartmaney.R
 import com.kelompok4.smartmaney.reduceDashboardState
 import com.kelompok4.smartmaney.ui.budgetplanning.BudgetPlanningScreen
 import com.kelompok4.smartmaney.ui.dashboard.DashboardScreen
@@ -81,6 +95,25 @@ fun AppNavHost(
 ) {
     var dashboardState by remember { mutableStateOf(DashboardUiState()) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val firebaseAuth = remember { FirebaseAuth.getInstance() }
+    var authenticatedUserId by remember { mutableStateOf(firebaseAuth.currentUser?.uid) }
+    val credentialManager = remember(context) { CredentialManager.create(context) }
+    val defaultWebClientId = remember(context) {
+        val stringId = context.resources.getIdentifier(
+            "default_web_client_id",
+            "string",
+            context.packageName
+        )
+        if (stringId == 0) "" else context.getString(stringId)
+    }
+    val startDestination = if (firebaseAuth.currentUser != null) {
+        AppDestinations.DASHBOARD_ROUTE
+    } else {
+        AppDestinations.LOGIN_ROUTE
+    }
+    val googleSignInFailedMessage = stringResource(R.string.google_sign_in_failed)
+    val googleSignInCancelledMessage = stringResource(R.string.google_sign_in_cancelled)
 
     val baseFactory = remember(appContainer) {
         SmartManeyViewModelFactory(appContainer.repository)
@@ -98,6 +131,18 @@ fun AppNavHost(
     val budgetPlanningUiState by budgetPlanningViewModel.uiState.collectAsState()
     val profileUiState by profileViewModel.uiState.collectAsState()
 
+    fun syncProfileWithAuthenticatedUser(user: FirebaseUser?) {
+        if (user == null) return
+        profileViewModel.syncAuthenticatedProfile(
+            fullName = user.displayName,
+            email = user.email
+        )
+    }
+
+    LaunchedEffect(authenticatedUserId) {
+        syncProfileWithAuthenticatedUser(firebaseAuth.currentUser)
+    }
+
     fun navigateToTab(tab: DashboardTab) {
         dashboardState = reduceDashboardState(dashboardState, DashboardAction.SelectTab(tab))
         val targetRoute = routeForTab(tab) ?: return
@@ -114,19 +159,86 @@ fun AppNavHost(
         dashboardState = reduceDashboardState(dashboardState, DashboardAction.SelectTab(tab))
     }
 
+    fun navigateToDashboardFromLogin() {
+        navController.navigate(AppDestinations.DASHBOARD_ROUTE) {
+            popUpTo(AppDestinations.LOGIN_ROUTE) { inclusive = true }
+            launchSingleTop = true
+        }
+    }
+
     NavHost(
         navController = navController,
-        startDestination = AppDestinations.LOGIN_ROUTE,
+        startDestination = startDestination,
         modifier = modifier
     ) {
         composable(route = AppDestinations.LOGIN_ROUTE) {
+            var isGoogleSigningIn by remember { mutableStateOf(false) }
+            var googleSignInError by remember { mutableStateOf<String?>(null) }
+
             LoginScreen(
                 onLoginClick = {
-                    navController.navigate(AppDestinations.DASHBOARD_ROUTE) {
-                        popUpTo(AppDestinations.LOGIN_ROUTE) { inclusive = true }
-                        launchSingleTop = true
+                    // This app now uses Google via Firebase as the login entry point.
+                },
+                onGoogleClick = {
+                    googleSignInError = null
+                    isGoogleSigningIn = true
+                    scope.launch {
+                        if (defaultWebClientId.isBlank()) {
+                            isGoogleSigningIn = false
+                            googleSignInError = googleSignInFailedMessage
+                            return@launch
+                        }
+                        try {
+                            val googleIdOption = GetGoogleIdOption.Builder()
+                                .setServerClientId(defaultWebClientId)
+                                .setFilterByAuthorizedAccounts(false)
+                                .setAutoSelectEnabled(false)
+                                .build()
+                            val request = GetCredentialRequest.Builder()
+                                .addCredentialOption(googleIdOption)
+                                .build()
+                            val credentialResult = credentialManager.getCredential(
+                                context = context,
+                                request = request
+                            )
+                            val credential = credentialResult.credential
+                            if (
+                                credential is CustomCredential &&
+                                credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
+                            ) {
+                                val googleIdTokenCredential = GoogleIdTokenCredential
+                                    .createFrom(credential.data)
+                                val firebaseCredential = GoogleAuthProvider.getCredential(
+                                    googleIdTokenCredential.idToken,
+                                    null
+                                )
+                                firebaseAuth.signInWithCredential(firebaseCredential)
+                                    .addOnCompleteListener { authTask ->
+                                        isGoogleSigningIn = false
+                                        if (authTask.isSuccessful) {
+                                            authenticatedUserId = authTask.result?.user?.uid
+                                            syncProfileWithAuthenticatedUser(authTask.result?.user)
+                                            googleSignInError = null
+                                            navigateToDashboardFromLogin()
+                                        } else {
+                                            googleSignInError = googleSignInFailedMessage
+                                        }
+                                    }
+                            } else {
+                                isGoogleSigningIn = false
+                                googleSignInError = googleSignInFailedMessage
+                            }
+                        } catch (_: GetCredentialException) {
+                            isGoogleSigningIn = false
+                            googleSignInError = googleSignInCancelledMessage
+                        } catch (_: GoogleIdTokenParsingException) {
+                            isGoogleSigningIn = false
+                            googleSignInError = googleSignInFailedMessage
+                        }
                     }
-                }
+                },
+                isGoogleSigningIn = isGoogleSigningIn,
+                googleSignInError = googleSignInError
             )
         }
 
@@ -145,12 +257,18 @@ fun AppNavHost(
                     monthlySpent = dashboardSummary.monthlySpent,
                     monthlyBudget = dashboardSummary.monthlyBudget,
                     budgetProgress = dashboardSummary.budgetProgress,
+                    spendingByCategory = dashboardSummary.spendingByCategory,
                     selectedTab = dashboardState.selectedTab,
                     onAdjustBudgetClick = {
                         navController.navigate(AppDestinations.BUDGET_PLANNING_ROUTE)
                     },
                     onTabSelected = ::navigateToTab,
                     onLogoutClick = {
+                        firebaseAuth.signOut()
+                        authenticatedUserId = null
+                        scope.launch {
+                            credentialManager.clearCredentialState(ClearCredentialStateRequest())
+                        }
                         navController.navigate(AppDestinations.LOGIN_ROUTE) {
                             popUpTo(AppDestinations.DASHBOARD_ROUTE) { inclusive = true }
                             launchSingleTop = true
@@ -271,7 +389,13 @@ fun AppNavHost(
                         .padding(bottom = innerPadding.calculateBottomPadding()),
                     uiState = profileUiState,
                     onAction = profileViewModel::dispatch,
+                    isEmailEditable = firebaseAuth.currentUser == null,
                     onLogoutClick = {
+                        firebaseAuth.signOut()
+                        authenticatedUserId = null
+                        scope.launch {
+                            credentialManager.clearCredentialState(ClearCredentialStateRequest())
+                        }
                         navController.navigate(AppDestinations.LOGIN_ROUTE) {
                             popUpTo(AppDestinations.DASHBOARD_ROUTE) { inclusive = true }
                             launchSingleTop = true
