@@ -51,7 +51,8 @@ fun WalletScreen(
     uiState: WalletUiState,
     onAddTransaction: (String, Int, WalletTransactionType) -> Unit,
     onDeleteTransaction: (String) -> Unit,
-    onAdjustBaseBalance: (Int) -> Unit
+    onAdjustBaseBalance: (Int) -> Unit,
+    onSuggestionClick: () -> Unit
 ) {
     var titleInput by rememberSaveable { mutableStateOf("") }
     var amountInput by rememberSaveable { mutableStateOf("") }
@@ -95,7 +96,8 @@ fun WalletScreen(
                     },
                     onIncreaseBase = {
                         onAdjustBaseBalance(100_000)
-                    }
+                    },
+                    onSuggestionClick = onSuggestionClick
                 )
             }
 
@@ -156,6 +158,20 @@ fun WalletScreen(
                 )
             }
 
+            item {
+                WalletSummaryCard(
+                    baseBalance = uiState.initialBalance,
+                    currentBalance = uiState.currentBalance,
+                    onDecreaseBase = {
+                        onAdjustBaseBalance(-100_000)
+                    },
+                    onIncreaseBase = {
+                        onAdjustBaseBalance(100_000)
+                    },
+                    onSuggestionClick = onSuggestionClick // TERUSKAN KE CARD
+                )
+            }
+
             if (uiState.transactions.isEmpty()) {
                 item {
                     Text(
@@ -183,7 +199,8 @@ private fun WalletSummaryCard(
     baseBalance: Int,
     currentBalance: Int,
     onDecreaseBase: () -> Unit,
-    onIncreaseBase: () -> Unit
+    onIncreaseBase: () -> Unit,
+    onSuggestionClick: () -> Unit // PARAMETER BARU
 ) {
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Column(
@@ -215,6 +232,15 @@ private fun WalletSummaryCard(
                     Button(onClick = onDecreaseBase) { Text("-100k") }
                     Button(onClick = onIncreaseBase) { Text("+100k") }
                 }
+            }
+
+            // TOMBOL SUGGESTION BARU
+            Button(
+                onClick = onSuggestionClick,
+                modifier = Modifier.fillMaxWidth(), // Membuat tombol melebar penuh
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+            ) {
+                Text("Lihat Smart Suggestions", fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -286,7 +312,8 @@ private fun WalletScreenPreview() {
             ),
             onAddTransaction = { _, _, _ -> },
             onDeleteTransaction = {},
-            onAdjustBaseBalance = {}
+            onAdjustBaseBalance = {},
+            onSuggestionClick = {}
         )
     }
 }

@@ -67,6 +67,7 @@ import com.kelompok4.smartmaney.DashboardUiState
 import com.kelompok4.smartmaney.R
 import com.kelompok4.smartmaney.reduceDashboardState
 import com.kelompok4.smartmaney.ui.budgetplanning.BudgetPlanningScreen
+import com.kelompok4.smartmaney.ui.budgetplanning.BudgetPlanningUiState
 import com.kelompok4.smartmaney.ui.dashboard.DashboardScreen
 import com.kelompok4.smartmaney.ui.detail.TransactionDetailScreen
 import com.kelompok4.smartmaney.ui.expensehistory.ExpenseFilter
@@ -74,6 +75,7 @@ import com.kelompok4.smartmaney.ui.expensehistory.ExpenseHistoryScreen
 import com.kelompok4.smartmaney.ui.login.LoginScreen
 import com.kelompok4.smartmaney.ui.profile.ProfileScreen
 import com.kelompok4.smartmaney.ui.scanreceipt.ScanReceiptScreen
+import com.kelompok4.smartmaney.ui.suggestion.SuggestionScreen
 import com.kelompok4.smartmaney.ui.theme.SmMuted
 import com.kelompok4.smartmaney.ui.theme.SmPrimary
 import com.kelompok4.smartmaney.ui.transaction.EditTransactionScreen
@@ -371,7 +373,10 @@ fun AppNavHost(
                     uiState = walletUiState,
                     onAddTransaction = walletViewModel::addTransaction,
                     onDeleteTransaction = walletViewModel::deleteTransaction,
-                    onAdjustBaseBalance = walletViewModel::adjustInitialBalance
+                    onAdjustBaseBalance = walletViewModel::adjustInitialBalance,
+                    onSuggestionClick = {
+                        navController.navigate("suggestion_route")
+                    }
                 )
             }
         }
@@ -456,6 +461,25 @@ fun AppNavHost(
                     detailViewModel.updateTransaction(newAmount, newNote)
                     navController.popBackStack()
                 }
+            )
+        }
+
+        // RUTE 1: Halaman Suggestion / Smart Insights
+        composable(route = "suggestion_route") {
+            SuggestionScreen(
+                onBackClick = { navController.popBackStack() },
+                onSetBudgetClick = {
+                    // Tombol ini akan melempar pengguna ke halaman Budget rekan lu
+                    navController.navigate("budget_planning_route")
+                }
+            )
+        }
+
+        // RUTE 2: Halaman Budget Planning buatan rekan lu
+        composable(route = "budget_planning_route") {
+            BudgetPlanningScreen(
+                uiState = BudgetPlanningUiState(), // Ganti 'NamaClassState' dengan nama yang kamu temukan di Langkah 1
+                onBackClick = { navController.popBackStack() }
             )
         }
     }
