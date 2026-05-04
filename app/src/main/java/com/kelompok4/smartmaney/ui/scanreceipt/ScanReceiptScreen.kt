@@ -3,7 +3,8 @@ package com.kelompok4.smartmaney.ui.scanreceipt
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import android.net.Uri
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -35,10 +36,12 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.FlashOff
 import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -59,16 +62,24 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.kelompok4.smartmaney.ui.theme.SmPrimary
 import com.kelompok4.smartmaney.ui.theme.SmSurfaceMuted
+import com.kelompok4.smartmaney.viewmodel.ScanReceiptUiState
+import kotlinx.coroutines.launch
+import java.io.ByteArrayOutputStream
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScanReceiptScreen(
     onBackClick: () -> Unit,
-    onPhotoSaved: () -> Unit// 1. PARAMETER BARU UNTUK TOMBOL BACK
+    uiState: ScanReceiptUiState,
+    onImageCaptured: (ByteArray) -> Unit,
+    onNavigateToDetail: (Long) -> Unit,
+    onNavigationConsumed: () -> Unit,
+    onDismissError: () -> Unit
 ) {
     val context = LocalContext.current
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
 
     var hasCameraPermission by remember {
         mutableStateOf(
@@ -93,23 +104,32 @@ fun ScanReceiptScreen(
     // 2. STATE BARU UNTUK MESIN PENJEPRET FOTO
     var imageCaptureUseCase by remember { mutableStateOf<ImageCapture?>(null) }
 
-    // State untuk menyimpan alamat foto yang dipilih dari galeri
-    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
-
     // Launcher untuk memanggil galeri bawaan sistem Android
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
             if (uri != null) {
-                selectedImageUri = uri
-                // Karena lu menunda UI untuk menampilkan foto, kita pakai Toast dulu sebagai bukti datanya masuk
-                Toast.makeText(context, "Foto dipilih: $uri", Toast.LENGTH_SHORT).show()
-                onPhotoSaved()
+                scope.launch {
+                    val bytes = readBytesFromUri(context, uri)
+                    if (bytes == null) {
+                        Toast.makeText(context, "Gagal membaca foto", Toast.LENGTH_SHORT).show()
+                    } else {
+                        onImageCaptured(bytes)
+                    }
+                }
             } else {
                 Toast.makeText(context, "Batal memilih foto", Toast.LENGTH_SHORT).show()
             }
         }
     )
+
+    LaunchedEffect(uiState.navigateToTransactionId) {
+        val transactionId = uiState.navigateToTransactionId
+        if (transactionId != null) {
+            onNavigateToDetail(transactionId)
+            onNavigationConsumed()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -181,7 +201,7 @@ fun ScanReceiptScreen(
                                     imageCapture // Wajib dimasukkan ke dalam binding
                                 )
                                 cameraControl = camera.cameraControl
-                            } catch (exc: Exception) {
+                            } catch (_: Exception) {
                                 // Tangani error
                             }
                         }, ContextCompat.getMainExecutor(ctx))
@@ -240,8 +260,15 @@ fun ScanReceiptScreen(
                         .clip(CircleShape)
                         .background(SmPrimary)
                         .clickable {
-                            takePhoto(context, imageCaptureUseCase) {
-                                onPhotoSaved() // Teruskan jembatannya ke fungsi
+                            takePhoto(context, imageCaptureUseCase) { photoFile ->
+                                scope.launch {
+                                    val bytes = readBytesFromFile(photoFile)
+                                    if (bytes == null) {
+                                        Toast.makeText(context, "Gagal membaca foto", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        onImageCaptured(bytes)
+                                    }
+                                }
                             }
                         }   ,
                     contentAlignment = Alignment.Center
@@ -259,13 +286,46 @@ fun ScanReceiptScreen(
                     Text("AUTO", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
             }
+
+            if (uiState.isProcessing) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.6f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Processing receipt...", color = Color.White)
+                }
+            }
+
+            uiState.errorMessage?.let { message ->
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color.White)
+                        .padding(16.dp)
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(message, color = MaterialTheme.colorScheme.error)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Button(onClick = onDismissError) {
+                            Text("Dismiss")
+                        }
+                    }
+                }
+            }
         }
     }
 }
 
 // 6. FUNGSI EKSEKUSI JEPRET FOTO
 // Tambahkan parameter onPhotoSaved di fungsinya
-private fun takePhoto(context: Context, imageCapture: ImageCapture?, onPhotoSaved: () -> Unit) {
+private fun takePhoto(
+    context: Context,
+    imageCapture: ImageCapture?,
+    onPhotoSaved: (File) -> Unit
+) {
     val capture = imageCapture ?: return
 
     val photoFile = File(context.cacheDir, "receipt_${System.currentTimeMillis()}.jpg")
@@ -281,10 +341,45 @@ private fun takePhoto(context: Context, imageCapture: ImageCapture?, onPhotoSave
 
             override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                 Toast.makeText(context, "Foto berhasil disimpan!", Toast.LENGTH_SHORT).show()
-
-                // EKSEKUSI JEMBATAN: Pindah halaman setelah kamera sukses menjepret
-                onPhotoSaved()
+                onPhotoSaved(photoFile)
             }
         }
     )
+}
+
+private fun readBytesFromUri(context: Context, uri: android.net.Uri): ByteArray? {
+    return runCatching {
+        context.contentResolver.openInputStream(uri)?.use { input ->
+            val original = input.readBytes()
+            compressImageBytes(original)
+        }
+    }.getOrNull()
+}
+
+private fun readBytesFromFile(file: File): ByteArray? {
+    return runCatching { compressImageBytes(file.readBytes()) }.getOrNull()
+}
+
+private fun compressImageBytes(source: ByteArray): ByteArray? {
+    val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeByteArray(source, 0, source.size, options)
+    if (options.outWidth <= 0 || options.outHeight <= 0) return null
+
+    val maxDimension = 1280
+    val sampleSize = calculateInSampleSize(options.outWidth, options.outHeight, maxDimension)
+    val decodeOptions = BitmapFactory.Options().apply { inSampleSize = sampleSize }
+    val bitmap = BitmapFactory.decodeByteArray(source, 0, source.size, decodeOptions) ?: return null
+
+    val output = ByteArrayOutputStream()
+    bitmap.compress(Bitmap.CompressFormat.JPEG, 80, output)
+    bitmap.recycle()
+    return output.toByteArray()
+}
+
+private fun calculateInSampleSize(width: Int, height: Int, maxDimension: Int): Int {
+    var inSampleSize = 1
+    while (width / (inSampleSize * 2) >= maxDimension && height / (inSampleSize * 2) >= maxDimension) {
+        inSampleSize *= 2
+    }
+    return inSampleSize
 }

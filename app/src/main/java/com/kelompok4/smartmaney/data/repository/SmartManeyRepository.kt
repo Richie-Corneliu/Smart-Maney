@@ -5,6 +5,7 @@ import com.kelompok4.smartmaney.data.local.entity.BudgetMetaEntity
 import com.kelompok4.smartmaney.data.local.entity.ProfileEntity
 import com.kelompok4.smartmaney.data.local.entity.TransactionEntity
 import com.kelompok4.smartmaney.data.local.entity.WalletMetaEntity
+import com.kelompok4.smartmaney.data.remote.model.ReceiptData
 import com.kelompok4.smartmaney.ui.budgetplanning.BudgetCategoryItem
 import com.kelompok4.smartmaney.ui.budgetplanning.BudgetPlanningUiState
 import com.kelompok4.smartmaney.ui.expensehistory.ExpenseCategory
@@ -198,26 +199,41 @@ class SmartManeyRepository(
         budgetDao.upsertBudgetMeta(BudgetMetaEntity(totalBudget = safeBudget))
     }
 
-    suspend fun createDraftTransactionFromReceipt(): Long {
+    suspend fun createDraftTransactionFromReceipt(receipt: ReceiptData): Long {
+        val normalizedTitle = receipt.merchantName?.trim().takeUnless { it.isNullOrBlank() } ?: "Receipt Draft"
+        val normalizedCategory = receipt.category?.trim().takeUnless { it.isNullOrBlank() }
+            ?: DEFAULT_EXPENSE_BUDGET_CATEGORY
+        val normalizedPayment = receipt.paymentMethod?.trim().takeUnless { it.isNullOrBlank() } ?: "E-Wallet"
+        val normalizedNote = receipt.note?.trim().orEmpty()
         return transactionDao.insertTransaction(
             TransactionEntity(
-                title = "Receipt Draft",
-                amount = 0,
+                title = normalizedTitle,
+                amount = receipt.totalAmount?.coerceAtLeast(0) ?: 0,
                 type = TRANSACTION_TYPE_EXPENSE,
-                category = DEFAULT_EXPENSE_BUDGET_CATEGORY,
-                note = "",
-                paymentMethod = "E-Wallet",
-                createdAtMillis = System.currentTimeMillis()
+                category = normalizedCategory,
+                note = normalizedNote,
+                paymentMethod = normalizedPayment,
+                createdAtMillis = receipt.transactionDateMillis ?: System.currentTimeMillis()
             )
         )
     }
 
-    suspend fun updateTransaction(transactionId: Long, newAmount: Int, newNote: String) {
+    suspend fun updateTransaction(
+        transactionId: Long,
+        newAmount: Int,
+        newNote: String,
+        newCategory: String,
+        newPaymentMethod: String,
+        newCreatedAtMillis: Long
+    ) {
         val current = transactionDao.getTransactionById(transactionId) ?: return
         transactionDao.updateTransaction(
             current.copy(
                 amount = newAmount.coerceAtLeast(0),
-                note = newNote.trim()
+                note = newNote.trim(),
+                category = newCategory.trim(),
+                paymentMethod = newPaymentMethod.trim(),
+                createdAtMillis = newCreatedAtMillis
             )
         )
     }
@@ -233,6 +249,16 @@ class SmartManeyRepository(
 
     private fun observeCurrentMonthCategorySpendMap(): Flow<Map<String, Int>> {
         val (startMillis, endMillis) = currentMonthRange()
+        return transactionDao.observeCategoryTotalsByTypeBetween(
+            type = TRANSACTION_TYPE_EXPENSE,
+            startMillis = startMillis,
+            endMillis = endMillis
+        ).map { rows ->
+            rows.associate { row -> row.category to row.total }
+        }
+    }
+
+    fun observeCategorySpendingBetween(startMillis: Long, endMillis: Long): Flow<Map<String, Int>> {
         return transactionDao.observeCategoryTotalsByTypeBetween(
             type = TRANSACTION_TYPE_EXPENSE,
             startMillis = startMillis,

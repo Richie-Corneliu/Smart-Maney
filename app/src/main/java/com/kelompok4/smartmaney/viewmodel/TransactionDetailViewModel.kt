@@ -45,12 +45,21 @@ class TransactionDetailViewModel(
         initialValue = TransactionDetailUiState(transactionId = transactionId)
     )
 
-    fun updateTransaction(amount: Int, note: String) {
+    fun updateTransaction(
+        amount: Int,
+        note: String,
+        category: String,
+        paymentMethod: String,
+        createdAtMillis: Long
+    ) {
         viewModelScope.launch {
             repository.updateTransaction(
                 transactionId = uiState.value.transactionId,
                 newAmount = amount,
-                newNote = note
+                newNote = note,
+                newCategory = category,
+                newPaymentMethod = paymentMethod,
+                newCreatedAtMillis = createdAtMillis
             )
         }
     }

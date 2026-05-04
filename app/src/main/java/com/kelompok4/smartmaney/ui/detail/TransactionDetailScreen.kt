@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -25,6 +26,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -33,10 +35,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kelompok4.smartmaney.ui.theme.SmPrimary
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -54,17 +56,23 @@ fun TransactionDetailScreen(
     onEditClick: () -> Unit
 ) {
     Scaffold(
-        containerColor = Color(0xFFF8F9FA), // Warna background abu-abu sangat muda khas aplikasi finance
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Detail Transaksi", fontWeight = FontWeight.Bold, fontSize = 16.sp) },
+                title = {
+                    Text(
+                        "Detail Transaksi",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Kembali")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
+                    containerColor = MaterialTheme.colorScheme.surface
                 )
             )
         }
@@ -81,62 +89,87 @@ fun TransactionDetailScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(24.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Ikon Kategori (Makan)
                     Box(
                         modifier = Modifier
                             .size(56.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFE8F5E9)), // Hijau sangat muda
+                            .background(SmPrimary.copy(alpha = 0.15f)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.Restaurant, contentDescription = "Makan", tint = Color(0xFF4CAF50))
+                        Icon(
+                            Icons.Default.Restaurant,
+                            contentDescription = "Makan",
+                            tint = SmPrimary
+                        )
                     }
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(formatCurrency(amount), fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF1D2438))
+                    Text(
+                        formatCurrency(amount),
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text("$category • ${formatDate(createdAtMillis)}", fontSize = 14.sp, color = Color.Gray)
+                    Text(
+                        "$category • ${formatDate(createdAtMillis)}",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
 
-            // 2. KARTU RINCIAN DETAIL
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(20.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     DetailRow(label = "Tanggal", value = formatDate(createdAtMillis))
-                    HorizontalDivider(color = Color(0xFFEEEEEE))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
                     DetailRow(label = "Kategori", value = category)
-                    HorizontalDivider(color = Color(0xFFEEEEEE))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
                     DetailRow(label = "Metode Pembayaran", value = paymentMethod)
                 }
             }
 
-            // 3. KARTU CATATAN
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(20.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp)
                 ) {
-                    Text("CATATAN", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+                    Text(
+                        "CATATAN",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(note.ifBlank { "-" }, fontSize = 14.sp, color = Color(0xFF1D2438))
+                    Text(
+                        note.ifBlank { "-" },
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 }
             }
 
@@ -144,10 +177,24 @@ fun TransactionDetailScreen(
 
             OutlinedButton(
                 onClick = onEditClick,
-                modifier = Modifier.fillMaxWidth().height(50.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
                 shape = RoundedCornerShape(12.dp),
             ) {
-                Text("Edit", color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold)
+                Text("Edit", color = SmPrimary, fontWeight = FontWeight.Bold)
+            }
+            Button(
+                onClick = onBackClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Text(
+                    "Done",
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
@@ -161,8 +208,13 @@ private fun DetailRow(label: String, value: String) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = label, color = Color.Gray, fontSize = 14.sp)
-        Text(text = value, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF1D2438))
+        Text(text = label, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+        Text(
+            text = value,
+            fontWeight = FontWeight.Bold,
+            fontSize = 14.sp,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 

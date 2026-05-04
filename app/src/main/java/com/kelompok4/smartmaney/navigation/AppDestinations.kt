@@ -13,6 +13,7 @@ object AppDestinations {
     const val EXPENSE_HISTORY_ROUTE_PATTERN =
         "$EXPENSE_HISTORY_ROUTE?$EXPENSE_HISTORY_MODE_ARG={$EXPENSE_HISTORY_MODE_ARG}"
     const val PROFILE_ROUTE = "profile_route"
+    const val SUGGESTION_ROUTE = "suggestion_route"
     const val TRANSACTION_ID_ARG = "transactionId"
     const val TRANSACTION_DETAIL_ROUTE = "transaction_detail_route"
     const val TRANSACTION_EDIT_ROUTE = "edit_transaction_route"

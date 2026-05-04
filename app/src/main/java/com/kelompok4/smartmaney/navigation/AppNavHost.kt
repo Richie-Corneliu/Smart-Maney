@@ -39,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -67,8 +68,8 @@ import com.kelompok4.smartmaney.DashboardUiState
 import com.kelompok4.smartmaney.R
 import com.kelompok4.smartmaney.reduceDashboardState
 import com.kelompok4.smartmaney.ui.budgetplanning.BudgetPlanningScreen
-import com.kelompok4.smartmaney.ui.budgetplanning.BudgetPlanningUiState
 import com.kelompok4.smartmaney.ui.dashboard.DashboardScreen
+import com.kelompok4.smartmaney.ui.detail.EditTransactionScreen
 import com.kelompok4.smartmaney.ui.detail.TransactionDetailScreen
 import com.kelompok4.smartmaney.ui.expensehistory.ExpenseFilter
 import com.kelompok4.smartmaney.ui.expensehistory.ExpenseHistoryScreen
@@ -78,13 +79,14 @@ import com.kelompok4.smartmaney.ui.scanreceipt.ScanReceiptScreen
 import com.kelompok4.smartmaney.ui.suggestion.SuggestionScreen
 import com.kelompok4.smartmaney.ui.theme.SmMuted
 import com.kelompok4.smartmaney.ui.theme.SmPrimary
-import com.kelompok4.smartmaney.ui.transaction.EditTransactionScreen
 import com.kelompok4.smartmaney.ui.wallet.WalletScreen
 import com.kelompok4.smartmaney.viewmodel.BudgetPlanningViewModel
 import com.kelompok4.smartmaney.viewmodel.DashboardViewModel
 import com.kelompok4.smartmaney.viewmodel.ExpenseHistoryViewModel
 import com.kelompok4.smartmaney.viewmodel.ProfileViewModel
+import com.kelompok4.smartmaney.viewmodel.ScanReceiptViewModel
 import com.kelompok4.smartmaney.viewmodel.SmartManeyViewModelFactory
+import com.kelompok4.smartmaney.viewmodel.SuggestionViewModel
 import com.kelompok4.smartmaney.viewmodel.TransactionDetailViewModel
 import com.kelompok4.smartmaney.viewmodel.WalletViewModel
 import kotlinx.coroutines.launch
@@ -98,16 +100,17 @@ fun AppNavHost(
     var dashboardState by remember { mutableStateOf(DashboardUiState()) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val resources = LocalResources.current
     val firebaseAuth = remember { FirebaseAuth.getInstance() }
     var authenticatedUserId by remember { mutableStateOf(firebaseAuth.currentUser?.uid) }
     val credentialManager = remember(context) { CredentialManager.create(context) }
     val defaultWebClientId = remember(context) {
-        val stringId = context.resources.getIdentifier(
+        val stringId = resources.getIdentifier(
             "default_web_client_id",
             "string",
             context.packageName
         )
-        if (stringId == 0) "" else context.getString(stringId)
+        if (stringId == 0) "" else resources.getString(stringId)
     }
     val startDestination = if (firebaseAuth.currentUser != null) {
         AppDestinations.DASHBOARD_ROUTE
@@ -120,18 +123,26 @@ fun AppNavHost(
     val baseFactory = remember(appContainer) {
         SmartManeyViewModelFactory(appContainer.repository)
     }
+    val scanFactory = remember(appContainer) {
+        SmartManeyViewModelFactory(
+            repository = appContainer.repository,
+            geminiReceiptService = appContainer.geminiReceiptService
+        )
+    }
 
     val dashboardViewModel: DashboardViewModel = viewModel(factory = baseFactory)
     val walletViewModel: WalletViewModel = viewModel(factory = baseFactory)
     val expenseHistoryViewModel: ExpenseHistoryViewModel = viewModel(factory = baseFactory)
     val budgetPlanningViewModel: BudgetPlanningViewModel = viewModel(factory = baseFactory)
     val profileViewModel: ProfileViewModel = viewModel(factory = baseFactory)
+    val scanReceiptViewModel: ScanReceiptViewModel = viewModel(factory = scanFactory)
 
     val dashboardSummary by dashboardViewModel.summary.collectAsState()
     val walletUiState by walletViewModel.uiState.collectAsState()
     val expenseHistoryUiState by expenseHistoryViewModel.uiState.collectAsState()
     val budgetPlanningUiState by budgetPlanningViewModel.uiState.collectAsState()
     val profileUiState by profileViewModel.uiState.collectAsState()
+    val scanReceiptUiState by scanReceiptViewModel.uiState.collectAsState()
 
     fun syncProfileWithAuthenticatedUser(user: FirebaseUser?) {
         if (user == null) return
@@ -155,10 +166,6 @@ fun AppNavHost(
                 saveState = true
             }
         }
-    }
-
-    fun syncTab(tab: DashboardTab) {
-        dashboardState = reduceDashboardState(dashboardState, DashboardAction.SelectTab(tab))
     }
 
     fun navigateToDashboardFromLogin() {
@@ -245,7 +252,6 @@ fun AppNavHost(
         }
 
         composable(route = AppDestinations.DASHBOARD_ROUTE) {
-            syncTab(DashboardTab.Home)
             AppShellScaffold(
                 selectedTab = dashboardState.selectedTab,
                 onTabSelected = ::navigateToTab,
@@ -292,17 +298,16 @@ fun AppNavHost(
 
         composable(route = AppDestinations.SCAN_RECEIPT_ROUTE) {
             ScanReceiptScreen(
-                onBackClick = {
-                    navController.popBackStack()
-                },
-                onPhotoSaved = {
-                    scope.launch {
-                        val transactionId = appContainer.repository.createDraftTransactionFromReceipt()
-                        navController.navigate(AppDestinations.transactionDetailRoute(transactionId)) {
-                            popUpTo(AppDestinations.SCAN_RECEIPT_ROUTE) { inclusive = true }
-                        }
+                onBackClick = { navController.popBackStack() },
+                uiState = scanReceiptUiState,
+                onImageCaptured = scanReceiptViewModel::submitReceiptImage,
+                onNavigateToDetail = { transactionId ->
+                    navController.navigate(AppDestinations.transactionDetailRoute(transactionId)) {
+                        popUpTo(AppDestinations.SCAN_RECEIPT_ROUTE) { inclusive = true }
                     }
-                }
+                },
+                onNavigationConsumed = scanReceiptViewModel::consumeNavigation,
+                onDismissError = scanReceiptViewModel::dismissError
             )
         }
 
@@ -321,7 +326,6 @@ fun AppNavHost(
                     expenseHistoryViewModel.selectFilter(ExpenseFilter.Monthly)
                 }
             }
-            syncTab(DashboardTab.Reports)
             AppShellScaffold(
                 selectedTab = dashboardState.selectedTab,
                 onTabSelected = ::navigateToTab,
@@ -338,7 +342,6 @@ fun AppNavHost(
         }
 
         composable(route = AppDestinations.BUDGET_PLANNING_ROUTE) {
-            syncTab(DashboardTab.Wallet)
             AppShellScaffold(
                 selectedTab = dashboardState.selectedTab,
                 onTabSelected = ::navigateToTab,
@@ -360,7 +363,6 @@ fun AppNavHost(
         }
 
         composable(route = AppDestinations.WALLET_ROUTE) {
-            syncTab(DashboardTab.Wallet)
             AppShellScaffold(
                 selectedTab = dashboardState.selectedTab,
                 onTabSelected = ::navigateToTab,
@@ -375,14 +377,13 @@ fun AppNavHost(
                     onDeleteTransaction = walletViewModel::deleteTransaction,
                     onAdjustBaseBalance = walletViewModel::adjustInitialBalance,
                     onSuggestionClick = {
-                        navController.navigate("suggestion_route")
+                        navController.navigate(AppDestinations.SUGGESTION_ROUTE)
                     }
                 )
             }
         }
 
         composable(route = AppDestinations.PROFILE_ROUTE) {
-            syncTab(DashboardTab.Profile)
             AppShellScaffold(
                 selectedTab = dashboardState.selectedTab,
                 onTabSelected = ::navigateToTab,
@@ -456,30 +457,30 @@ fun AppNavHost(
             EditTransactionScreen(
                 initialAmount = detailState.amount,
                 initialNote = detailState.note,
+                initialCategory = detailState.category,
+                initialPaymentMethod = detailState.paymentMethod,
+                initialCreatedAtMillis = detailState.createdAtMillis,
                 onBackClick = { navController.popBackStack() },
-                onSaveClick = { newAmount, newNote ->
-                    detailViewModel.updateTransaction(newAmount, newNote)
+                onSaveClick = { newAmount, newNote, newCategory, newPaymentMethod, newCreatedAtMillis ->
+                    detailViewModel.updateTransaction(newAmount, newNote, newCategory, newPaymentMethod, newCreatedAtMillis)
                     navController.popBackStack()
                 }
             )
         }
 
-        // RUTE 1: Halaman Suggestion / Smart Insights
-        composable(route = "suggestion_route") {
+        composable(route = AppDestinations.SUGGESTION_ROUTE) {
+            val suggestionFactory = remember {
+                SmartManeyViewModelFactory(appContainer.repository)
+            }
+            val suggestionViewModel: SuggestionViewModel = viewModel(factory = suggestionFactory)
+
             SuggestionScreen(
                 onBackClick = { navController.popBackStack() },
                 onSetBudgetClick = {
-                    // Tombol ini akan melempar pengguna ke halaman Budget rekan lu
-                    navController.navigate("budget_planning_route")
-                }
-            )
-        }
-
-        // RUTE 2: Halaman Budget Planning buatan rekan lu
-        composable(route = "budget_planning_route") {
-            BudgetPlanningScreen(
-                uiState = BudgetPlanningUiState(), // Ganti 'NamaClassState' dengan nama yang kamu temukan di Langkah 1
-                onBackClick = { navController.popBackStack() }
+                    navController.navigate(AppDestinations.BUDGET_PLANNING_ROUTE)
+                },
+                repository = appContainer.repository,
+                viewModel = suggestionViewModel
             )
         }
     }
@@ -538,7 +539,7 @@ private fun AppBottomBar(
     onTabSelected: (DashboardTab) -> Unit
 ) {
     BottomAppBar(
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 8.dp,
         contentPadding = PaddingValues(0.dp)
     ) {
