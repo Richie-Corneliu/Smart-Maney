@@ -1,7 +1,6 @@
 package com.kelompok4.smartmaney.data.repository
 
 import com.kelompok4.smartmaney.data.local.SmartManeyDatabase
-import com.kelompok4.smartmaney.data.local.entity.BudgetCategoryEntity
 import com.kelompok4.smartmaney.data.local.entity.BudgetMetaEntity
 import com.kelompok4.smartmaney.data.local.entity.ProfileEntity
 import com.kelompok4.smartmaney.data.local.entity.TransactionEntity
@@ -17,11 +16,9 @@ import com.kelompok4.smartmaney.ui.profile.ProfileUiState
 import com.kelompok4.smartmaney.ui.wallet.WalletTransaction
 import com.kelompok4.smartmaney.ui.wallet.WalletTransactionType
 import com.kelompok4.smartmaney.ui.wallet.WalletUiState
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -129,65 +126,6 @@ class SmartManeyRepository(
 
     fun observeTransaction(transactionId: Long): Flow<TransactionEntity?> {
         return transactionDao.observeTransactionById(transactionId)
-    }
-
-    suspend fun seedIfEmpty() = withContext(Dispatchers.IO) {
-        val hasTransactions = transactionDao.countTransactions() > 0
-        if (!hasTransactions) {
-            transactionDao.insertTransaction(
-                TransactionEntity(
-                    title = "Gaji Bulanan",
-                    amount = 6_500_000,
-                    type = TRANSACTION_TYPE_INCOME,
-                    category = DEFAULT_INCOME_CATEGORY,
-                    note = "Auto seeded data",
-                    paymentMethod = "Bank Transfer",
-                    createdAtMillis = System.currentTimeMillis() - 86_400_000L
-                )
-            )
-            RepositorySeedData.expenses.forEach { item ->
-                transactionDao.insertTransaction(
-                    TransactionEntity(
-                        title = item.title,
-                        amount = item.amount,
-                        type = TRANSACTION_TYPE_EXPENSE,
-                        category = normalizeBudgetCategoryName(item.categoryLabel),
-                        note = "",
-                        paymentMethod = "E-Wallet",
-                        createdAtMillis = item.timestampMillis
-                    )
-                )
-            }
-        }
-
-        if (budgetDao.countBudgetCategories() == 0L) {
-            budgetDao.upsertBudgetCategories(
-                RepositorySeedData.budgetCategories.map {
-                    BudgetCategoryEntity(
-                        id = it.id,
-                        name = it.name,
-                        allocated = it.allocated
-                    )
-                }
-            )
-        }
-
-        if (walletDao.getWalletMeta() == null) {
-            walletDao.upsertWalletMeta(WalletMetaEntity(initialBalance = DEFAULT_INITIAL_BALANCE))
-        }
-        if (budgetDao.getBudgetMeta() == null) {
-            budgetDao.upsertBudgetMeta(BudgetMetaEntity(totalBudget = DEFAULT_MONTHLY_BUDGET))
-        }
-        if (profileDao.getProfile() == null) {
-            profileDao.upsertProfile(
-                ProfileEntity(
-                    fullName = DEFAULT_PROFILE.fullName,
-                    email = DEFAULT_PROFILE.email,
-                    notificationsEnabled = DEFAULT_PROFILE.notificationsEnabled,
-                    darkModeEnabled = DEFAULT_PROFILE.darkModeEnabled
-                )
-            )
-        }
     }
 
     suspend fun addWalletTransaction(title: String, amount: Int, type: WalletTransactionType) {

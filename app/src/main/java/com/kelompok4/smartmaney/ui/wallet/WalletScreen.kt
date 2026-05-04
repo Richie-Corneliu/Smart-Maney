@@ -158,20 +158,6 @@ fun WalletScreen(
                 )
             }
 
-            item {
-                WalletSummaryCard(
-                    baseBalance = uiState.initialBalance,
-                    currentBalance = uiState.currentBalance,
-                    onDecreaseBase = {
-                        onAdjustBaseBalance(-100_000)
-                    },
-                    onIncreaseBase = {
-                        onAdjustBaseBalance(100_000)
-                    },
-                    onSuggestionClick = onSuggestionClick // TERUSKAN KE CARD
-                )
-            }
-
             if (uiState.transactions.isEmpty()) {
                 item {
                     Text(
