@@ -14,6 +14,7 @@ data class ReceiptItem(
 )
 
 data class ReceiptData(
+	val isReceipt: Boolean,
 	val merchantName: String?,
 	val totalAmount: Int?,
 	val transactionDateMillis: Long?,
@@ -25,6 +26,7 @@ data class ReceiptData(
 	companion object {
 		fun empty(): ReceiptData {
 			return ReceiptData(
+				isReceipt = false,
 				merchantName = null,
 				totalAmount = null,
 				transactionDateMillis = null,
@@ -39,6 +41,7 @@ data class ReceiptData(
 			val jsonText = extractJsonObject(rawText) ?: return empty()
 			return runCatching {
 				val json = JSONObject(jsonText)
+				if (!json.optBoolean("is_receipt", true)) return empty()
 				val merchant = json.optString("merchant", "").ifBlank { null }
 				val total = json.optString("total_amount", "").toIntOrNull()
 				val payment = json.optString("payment_method", "").ifBlank { null }
@@ -48,6 +51,7 @@ data class ReceiptData(
 				val dateMillis = parseDateMillis(dateText)
 				val items = json.optJSONArray("items")?.toReceiptItems().orEmpty()
 				ReceiptData(
+					isReceipt = true,
 					merchantName = merchant,
 					totalAmount = total,
 					transactionDateMillis = dateMillis,

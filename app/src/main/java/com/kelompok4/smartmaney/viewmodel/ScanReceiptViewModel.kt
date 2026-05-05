@@ -2,7 +2,6 @@ package com.kelompok4.smartmaney.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.kelompok4.smartmaney.data.remote.model.ReceiptData
 import com.kelompok4.smartmaney.data.remote.service.GeminiReceiptService
 import com.kelompok4.smartmaney.data.repository.SmartManeyRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,19 +34,13 @@ class ScanReceiptViewModel(
             val receipt = runCatching { receiptService.parseReceipt(imageBytes) }
                 .getOrElse {
                     _uiState.update { state ->
-                        state.copy(
-                            isProcessing = false,
-                            errorMessage = "Receipt parsing failed. Try again."
-                        )
+                        state.copy(isProcessing = false, errorMessage = "Receipt parsing failed. Try again.")
                     }
                     return@launch
                 }
-            if (receipt.isEmpty()) {
+            if (!receipt.isReceipt) {
                 _uiState.update { state ->
-                    state.copy(
-                        isProcessing = false,
-                        errorMessage = "No receipt data found. Try another photo."
-                    )
+                    state.copy(isProcessing = false, errorMessage = "No receipt detected. Point the camera at a receipt or invoice.")
                 }
                 return@launch
             }
@@ -69,8 +62,4 @@ class ScanReceiptViewModel(
         _uiState.update { it.copy(errorMessage = null) }
     }
 
-    private fun ReceiptData.isEmpty(): Boolean {
-        return merchantName == null && totalAmount == null && transactionDateMillis == null &&
-                paymentMethod == null && category == null && note == null && items.isEmpty()
-    }
 }

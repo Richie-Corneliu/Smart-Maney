@@ -40,7 +40,9 @@ class GeminiReceiptService(
 
 	companion object {
 		private const val PROMPT = """You are a helpful assistant that extracts structured data from receipt images.
-Guidelines:
+First, determine whether the image is actually a receipt or invoice.
+- Set is_receipt to true only if the image shows a purchase receipt, invoice, or bill.
+- Set is_receipt to false for any other image (food, people, nature, screenshots, etc.). If false, leave all other fields empty.
 - Use numbers without currency symbols.
 - Use transaction_date format yyyy-MM-dd HH:mm if available; else yyyy-MM-dd.
 - Fill missing fields with empty string or null.
@@ -49,6 +51,7 @@ Guidelines:
 		private fun receiptSchema(): Schema {
 			return Schema.obj(
 				properties = mapOf(
+					"is_receipt" to Schema.boolean(),
 					"merchant" to Schema.string(),
 					"total_amount" to Schema.integer(),
 					"transaction_date" to Schema.string(),
