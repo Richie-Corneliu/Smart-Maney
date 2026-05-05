@@ -1,20 +1,24 @@
 package com.kelompok4.smartmaney.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.kelompok4.smartmaney.data.repository.SmartManeyRepository
 import com.kelompok4.smartmaney.ui.suggestion.CategorySpendData
 import com.kelompok4.smartmaney.ui.suggestion.SuggestionUiState
 import com.kelompok4.smartmaney.ui.suggestion.generateSuggestionsFromSpending
 import com.kelompok4.smartmaney.ui.suggestion.normalizeCategoryName
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import java.util.Calendar
 
 class SuggestionViewModel(
     private val repository: SmartManeyRepository
 ) : ViewModel() {
 
-    val uiState: Flow<SuggestionUiState> = combine(
+    val uiState: StateFlow<SuggestionUiState> = combine(
         getCurrentMonthCategorySpending(),
         getPreviousMonthCategorySpending()
     ) { currentMonthMap, previousMonthMap ->
@@ -55,7 +59,11 @@ class SuggestionViewModel(
             suggestions = suggestions,
             showLoading = false
         )
-    }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = SuggestionUiState()
+    )
 
     private fun getCurrentMonthCategorySpending(): Flow<Map<String, Int>> {
         val (startMillis, endMillis) = currentMonthRange()

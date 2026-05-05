@@ -44,12 +44,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.kelompok4.smartmaney.data.repository.SmartManeyRepository
 import com.kelompok4.smartmaney.ui.theme.SmDanger
 import com.kelompok4.smartmaney.ui.theme.SmPrimary
 import com.kelompok4.smartmaney.ui.theme.SmSuccess
-import com.kelompok4.smartmaney.viewmodel.SmartManeyViewModelFactory
 import com.kelompok4.smartmaney.viewmodel.SuggestionViewModel
 import kotlin.math.abs
 
@@ -58,13 +55,9 @@ import kotlin.math.abs
 fun SuggestionScreen(
     onBackClick: () -> Unit,
     onSetBudgetClick: () -> Unit,
-    repository: SmartManeyRepository? = null,
-    viewModel: SuggestionViewModel = viewModel(
-        factory = repository?.let { SmartManeyViewModelFactory(it) }
-            ?: error("Repository must be provided or viewModel must be passed")
-    )
+    viewModel: SuggestionViewModel
 ) {
-    val uiState by viewModel.uiState.collectAsState(initial = SuggestionUiState())
+    val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -189,7 +182,7 @@ fun SuggestionScreen(
                 ) {
                     Column(modifier = Modifier.padding(20.dp)) {
                         if (uiState.categoryChartData.isNotEmpty()) {
-                            SimpleBarChart(uiState.categoryChartData)
+                            SimpleBarChart(uiState.categoryChartData, uiState.topSpendingCategory)
                         } else {
                             Box(
                                 modifier = Modifier
@@ -255,7 +248,7 @@ private fun SuggestionItemCard(icon: ImageVector, title: String, subtitle: Strin
 }
 
 @Composable
-private fun SimpleBarChart(chartData: List<CategorySpendData>) {
+private fun SimpleBarChart(chartData: List<CategorySpendData>, topCategory: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -264,6 +257,7 @@ private fun SimpleBarChart(chartData: List<CategorySpendData>) {
         verticalAlignment = Alignment.Bottom
     ) {
         chartData.take(5).forEach { data ->
+            val isTop = data.label.equals(normalizeCategoryName(topCategory), ignoreCase = true)
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Bottom,
@@ -274,7 +268,7 @@ private fun SimpleBarChart(chartData: List<CategorySpendData>) {
                         .width(28.dp)
                         .fillMaxHeight(data.percentage)
                         .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
-                        .background(if (data.label == "Food") SmPrimary else MaterialTheme.colorScheme.surfaceVariant)
+                        .background(if (isTop) SmPrimary else MaterialTheme.colorScheme.surfaceVariant)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(data.label, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)

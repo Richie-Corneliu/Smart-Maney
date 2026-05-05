@@ -479,7 +479,6 @@ fun AppNavHost(
                 onSetBudgetClick = {
                     navController.navigate(AppDestinations.BUDGET_PLANNING_ROUTE)
                 },
-                repository = appContainer.repository,
                 viewModel = suggestionViewModel
             )
         }
