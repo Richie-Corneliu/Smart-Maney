@@ -74,6 +74,7 @@ import com.kelompok4.smartmaney.ui.detail.TransactionDetailScreen
 import com.kelompok4.smartmaney.ui.expensehistory.ExpenseFilter
 import com.kelompok4.smartmaney.ui.expensehistory.ExpenseHistoryScreen
 import com.kelompok4.smartmaney.ui.login.LoginScreen
+import com.kelompok4.smartmaney.ui.onboarding.OnboardingScreen
 import com.kelompok4.smartmaney.ui.profile.ProfileScreen
 import com.kelompok4.smartmaney.ui.scanreceipt.ScanReceiptScreen
 import com.kelompok4.smartmaney.ui.suggestion.SuggestionScreen
@@ -83,6 +84,7 @@ import com.kelompok4.smartmaney.ui.wallet.WalletScreen
 import com.kelompok4.smartmaney.viewmodel.BudgetPlanningViewModel
 import com.kelompok4.smartmaney.viewmodel.DashboardViewModel
 import com.kelompok4.smartmaney.viewmodel.ExpenseHistoryViewModel
+import com.kelompok4.smartmaney.viewmodel.OnboardingViewModel
 import com.kelompok4.smartmaney.viewmodel.ProfileViewModel
 import com.kelompok4.smartmaney.viewmodel.ScanReceiptViewModel
 import com.kelompok4.smartmaney.viewmodel.SmartManeyViewModelFactory
@@ -112,11 +114,6 @@ fun AppNavHost(
         )
         if (stringId == 0) "" else resources.getString(stringId)
     }
-    val startDestination = if (firebaseAuth.currentUser != null) {
-        AppDestinations.DASHBOARD_ROUTE
-    } else {
-        AppDestinations.LOGIN_ROUTE
-    }
     val googleSignInFailedMessage = stringResource(R.string.google_sign_in_failed)
     val googleSignInCancelledMessage = stringResource(R.string.google_sign_in_cancelled)
 
@@ -130,6 +127,20 @@ fun AppNavHost(
         )
     }
 
+    val onboardingViewModel: OnboardingViewModel = viewModel(factory = baseFactory)
+
+    var startDestination by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) {
+        val user = firebaseAuth.currentUser
+        startDestination = when {
+            user == null -> AppDestinations.LOGIN_ROUTE
+            appContainer.repository.isOnboardingComplete() -> AppDestinations.DASHBOARD_ROUTE
+            else -> {
+                onboardingViewModel.setUserName(user.displayName.orEmpty())
+                AppDestinations.ONBOARDING_ROUTE
+            }
+        }
+    }
     val dashboardViewModel: DashboardViewModel = viewModel(factory = baseFactory)
     val walletViewModel: WalletViewModel = viewModel(factory = baseFactory)
     val expenseHistoryViewModel: ExpenseHistoryViewModel = viewModel(factory = baseFactory)
@@ -175,9 +186,11 @@ fun AppNavHost(
         }
     }
 
+    val resolvedStart = startDestination ?: return
+
     NavHost(
         navController = navController,
-        startDestination = startDestination,
+        startDestination = resolvedStart,
         modifier = modifier
     ) {
         composable(route = AppDestinations.LOGIN_ROUTE) {
@@ -228,7 +241,18 @@ fun AppNavHost(
                                             authenticatedUserId = authTask.result?.user?.uid
                                             syncProfileWithAuthenticatedUser(authTask.result?.user)
                                             googleSignInError = null
-                                            navigateToDashboardFromLogin()
+                                            scope.launch {
+                                                val displayName = authTask.result?.user?.displayName.orEmpty()
+                                                if (appContainer.repository.isOnboardingComplete()) {
+                                                    navigateToDashboardFromLogin()
+                                                } else {
+                                                    onboardingViewModel.setUserName(displayName)
+                                                    navController.navigate(AppDestinations.ONBOARDING_ROUTE) {
+                                                        popUpTo(AppDestinations.LOGIN_ROUTE) { inclusive = true }
+                                                        launchSingleTop = true
+                                                    }
+                                                }
+                                            }
                                         } else {
                                             googleSignInError = googleSignInFailedMessage
                                         }
@@ -248,6 +272,23 @@ fun AppNavHost(
                 },
                 isGoogleSigningIn = isGoogleSigningIn,
                 googleSignInError = googleSignInError
+            )
+        }
+
+        composable(route = AppDestinations.ONBOARDING_ROUTE) {
+            val onboardingUiState by onboardingViewModel.uiState.collectAsState()
+            OnboardingScreen(
+                uiState = onboardingUiState,
+                onNextStep = onboardingViewModel::nextStep,
+                onPrevStep = onboardingViewModel::prevStep,
+                onBalanceChanged = onboardingViewModel::onBalanceChanged,
+                onBudgetChanged = onboardingViewModel::onBudgetChanged,
+                onNavigateToDashboard = {
+                    navController.navigate(AppDestinations.DASHBOARD_ROUTE) {
+                        popUpTo(AppDestinations.ONBOARDING_ROUTE) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
             )
         }
 

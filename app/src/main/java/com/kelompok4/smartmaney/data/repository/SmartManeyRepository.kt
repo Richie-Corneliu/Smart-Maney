@@ -1,6 +1,7 @@
 package com.kelompok4.smartmaney.data.repository
 
 import com.kelompok4.smartmaney.data.local.SmartManeyDatabase
+import com.kelompok4.smartmaney.data.local.entity.BudgetCategoryEntity
 import com.kelompok4.smartmaney.data.local.entity.BudgetMetaEntity
 import com.kelompok4.smartmaney.data.local.entity.ProfileEntity
 import com.kelompok4.smartmaney.data.local.entity.TransactionEntity
@@ -325,6 +326,16 @@ class SmartManeyRepository(
         return start.timeInMillis to end.timeInMillis
     }
 
+    suspend fun isOnboardingComplete(): Boolean = walletDao.getWalletMeta() != null
+
+    suspend fun completeOnboarding(initialBalance: Int, monthlyBudget: Int) {
+        walletDao.upsertWalletMeta(WalletMetaEntity(initialBalance = initialBalance.coerceAtLeast(0)))
+        budgetDao.upsertBudgetMeta(BudgetMetaEntity(totalBudget = monthlyBudget.coerceAtLeast(0)))
+        if (budgetDao.countBudgetCategories() == 0L) {
+            budgetDao.upsertBudgetCategories(DEFAULT_BUDGET_CATEGORIES)
+        }
+    }
+
     companion object {
         private const val TRANSACTION_TYPE_INCOME = "INCOME"
         private const val TRANSACTION_TYPE_EXPENSE = "EXPENSE"
@@ -341,6 +352,15 @@ class SmartManeyRepository(
         )
 
         private val timeFormatter = SimpleDateFormat("HH:mm", Locale.forLanguageTag("id-ID"))
+
+        internal val DEFAULT_BUDGET_CATEGORIES = listOf(
+            BudgetCategoryEntity(id = "food",      name = "Food",      allocated = 1_500_000),
+            BudgetCategoryEntity(id = "transport", name = "Transport", allocated = 500_000),
+            BudgetCategoryEntity(id = "shopping",  name = "Shopping",  allocated = 800_000),
+            BudgetCategoryEntity(id = "bills",     name = "Bills",     allocated = 600_000),
+            BudgetCategoryEntity(id = "health",    name = "Health",    allocated = 400_000),
+            BudgetCategoryEntity(id = "other",     name = "Lain-lain", allocated = 200_000),
+        )
     }
 }
 

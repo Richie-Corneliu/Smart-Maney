@@ -2,6 +2,7 @@ package com.kelompok4.smartmaney.navigation
 
 object AppDestinations {
     const val LOGIN_ROUTE = "login"
+    const val ONBOARDING_ROUTE = "onboarding"
     const val DASHBOARD_ROUTE = "dashboard"
     const val WALLET_ROUTE = "wallet_route"
     const val SCAN_RECEIPT_ROUTE = "scan_receipt_route"

@@ -1,21 +1,25 @@
 package com.kelompok4.smartmaney.ui.profile
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -23,11 +27,14 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.kelompok4.smartmaney.R
 import com.kelompok4.smartmaney.ui.theme.SmartManeyTheme
 
@@ -61,78 +68,85 @@ fun ProfileScreen(
             contentPadding = PaddingValues(bottom = 24.dp)
         ) {
             item {
-                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Text(
-                            stringResource(R.string.profile_section_account),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    if (uiState.photoUrl != null) {
+                        AsyncImage(
+                            model = uiState.photoUrl,
+                            contentDescription = "Profile photo",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(CircleShape)
                         )
-                        OutlinedTextField(
-                            value = uiState.fullName,
-                            onValueChange = {
-                                onAction(ProfileAction.UpdateFullName(it))
-                            },
-                            label = { Text(stringResource(R.string.profile_full_name)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
-                        )
-                        OutlinedTextField(
-                            value = uiState.email,
-                            onValueChange = {
-                                onAction(ProfileAction.UpdateEmail(it))
-                            },
-                            label = { Text(stringResource(R.string.profile_email)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            enabled = isEmailEditable
-                        )
-                        if (!isEmailEditable) {
-                            Text(
-                                text = stringResource(R.string.profile_email_locked_hint),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.Person,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(44.dp)
                             )
                         }
                     }
-                }
-            }
-
-            item {
-                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    if (uiState.fullName.isNotBlank()) {
                         Text(
-                            stringResource(R.string.profile_section_preferences),
+                            text = uiState.fullName,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold
                         )
-                        PreferenceRow(
-                            title = stringResource(R.string.profile_enable_notifications),
-                            checked = uiState.notificationsEnabled,
-                            onCheckedChange = {
-                                onAction(ProfileAction.ToggleNotifications(it))
-                            }
+                    }
+                    if (uiState.email.isNotBlank()) {
+                        Text(
+                            text = uiState.email,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
             }
-
             item {
-                Button(
-                    onClick = { onAction(ProfileAction.SaveChanges) },
-                    modifier = Modifier.fillMaxWidth()
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(stringResource(R.string.profile_save_changes))
+                    OutlinedTextField(
+                        value = uiState.fullName,
+                        onValueChange = {
+                            onAction(ProfileAction.UpdateFullName(it))
+                        },
+                        label = { Text(stringResource(R.string.profile_full_name)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = uiState.email,
+                        onValueChange = {
+                            onAction(ProfileAction.UpdateEmail(it))
+                        },
+                        label = { Text(stringResource(R.string.profile_email)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        enabled = isEmailEditable
+                    )
+                    if (!isEmailEditable) {
+                        Text(
+                            text = stringResource(R.string.profile_email_locked_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
 
@@ -161,22 +175,6 @@ fun ProfileScreen(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun PreferenceRow(
-    title: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(text = title, style = MaterialTheme.typography.bodyLarge)
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
 

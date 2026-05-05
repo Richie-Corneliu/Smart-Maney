@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -100,9 +101,17 @@ fun ScanReceiptScreen(
 
     var isTorchOn by remember { mutableStateOf(false) }
     var cameraControl by remember { mutableStateOf<androidx.camera.core.CameraControl?>(null) }
-
-    // 2. STATE BARU UNTUK MESIN PENJEPRET FOTO
+    var cameraProvider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
     var imageCaptureUseCase by remember { mutableStateOf<ImageCapture?>(null) }
+
+    LaunchedEffect(uiState.isProcessing) {
+        if (uiState.isProcessing) {
+            cameraProvider?.unbindAll()
+            cameraControl = null
+            imageCaptureUseCase = null
+            isTorchOn = false
+        }
+    }
 
     // Launcher untuk memanggil galeri bawaan sistem Android
     val photoPickerLauncher = rememberLauncherForActivityResult(
@@ -178,31 +187,31 @@ fun ScanReceiptScreen(
 
                         val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
                         cameraProviderFuture.addListener({
-                            val cameraProvider = cameraProviderFuture.get()
+                            val provider = cameraProviderFuture.get()
+                            cameraProvider = provider
 
                             val preview = Preview.Builder().build().also {
                                 it.surfaceProvider = previewView.surfaceProvider
                             }
 
-                            // 4. KONFIGURASI IMAGE CAPTURE
                             val imageCapture = ImageCapture.Builder()
                                 .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                                 .build()
-                            imageCaptureUseCase = imageCapture // Simpan ke state agar bisa diakses tombol
+                            imageCaptureUseCase = imageCapture
 
                             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
                             try {
-                                cameraProvider.unbindAll()
-                                val camera = cameraProvider.bindToLifecycle(
+                                provider.unbindAll()
+                                val camera = provider.bindToLifecycle(
                                     lifecycleOwner,
                                     cameraSelector,
                                     preview,
-                                    imageCapture // Wajib dimasukkan ke dalam binding
+                                    imageCapture
                                 )
                                 cameraControl = camera.cameraControl
                             } catch (_: Exception) {
-                                // Tangani error
+                                // ignore bind errors
                             }
                         }, ContextCompat.getMainExecutor(ctx))
 
@@ -294,7 +303,22 @@ fun ScanReceiptScreen(
                         .background(Color.Black.copy(alpha = 0.6f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("Processing receipt...", color = Color.White)
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        CircularProgressIndicator(
+                            color = SmPrimary,
+                            strokeWidth = 3.dp,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Text(
+                            "Analyzing receipt...",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
 

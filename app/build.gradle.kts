@@ -76,6 +76,7 @@ dependencies {
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.google.identity)
+    implementation(libs.coil.compose)
 
 
     ksp(libs.androidx.room.compiler)

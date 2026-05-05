@@ -2,6 +2,7 @@ package com.kelompok4.smartmaney.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
 import com.kelompok4.smartmaney.data.repository.SmartManeyRepository
 import com.kelompok4.smartmaney.ui.profile.ProfileAction
 import com.kelompok4.smartmaney.ui.profile.ProfileStatus
@@ -42,6 +43,8 @@ class ProfileViewModel(
     }
 
     fun syncAuthenticatedProfile(fullName: String?, email: String?) {
+        val photoUrl = FirebaseAuth.getInstance().currentUser?.photoUrl?.toString()
+        _uiState.update { it.copy(photoUrl = photoUrl) }
         viewModelScope.launch {
             repository.syncProfileFromAuthenticatedUser(
                 authDisplayName = fullName,

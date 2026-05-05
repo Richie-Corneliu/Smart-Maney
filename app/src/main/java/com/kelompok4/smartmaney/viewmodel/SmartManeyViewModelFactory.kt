@@ -13,6 +13,7 @@ class SmartManeyViewModelFactory(
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return when {
+            modelClass.isAssignableFrom(OnboardingViewModel::class.java) -> OnboardingViewModel(repository) as T
             modelClass.isAssignableFrom(DashboardViewModel::class.java) -> DashboardViewModel(repository) as T
             modelClass.isAssignableFrom(WalletViewModel::class.java) -> WalletViewModel(repository) as T
             modelClass.isAssignableFrom(ExpenseHistoryViewModel::class.java) -> ExpenseHistoryViewModel(repository) as T

@@ -3,6 +3,7 @@ package com.kelompok4.smartmaney.ui.profile
 data class ProfileUiState(
     val fullName: String = "Andra Pratama",
     val email: String = "andra@example.com",
+    val photoUrl: String? = null,
     val notificationsEnabled: Boolean = true,
     val darkModeEnabled: Boolean = false,
     val status: ProfileStatus? = null

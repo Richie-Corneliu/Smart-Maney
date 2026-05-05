@@ -17,6 +17,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+//        lifecycleScope.launch {
+//            appContainer.seeder.seedIfEmpty()
+//        }
         setContent {
             SmartManeyTheme {
                 AppNavHost(Modifier.fillMaxSize(), appContainer)
