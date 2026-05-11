@@ -198,9 +198,6 @@ fun AppNavHost(
             var googleSignInError by remember { mutableStateOf<String?>(null) }
 
             LoginScreen(
-                onLoginClick = {
-                    // This app now uses Google via Firebase as the login entry point.
-                },
                 onGoogleClick = {
                     googleSignInError = null
                     isGoogleSigningIn = true

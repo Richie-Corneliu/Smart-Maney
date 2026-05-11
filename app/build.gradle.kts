@@ -78,6 +78,7 @@ dependencies {
     implementation(libs.google.identity)
     implementation(libs.coil.compose)
 
+    implementation(libs.lottie.compose)
 
     ksp(libs.androidx.room.compiler)
     testImplementation(libs.junit)
