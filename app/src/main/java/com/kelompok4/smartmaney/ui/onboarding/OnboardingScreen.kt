@@ -30,7 +30,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DonutLarge
-import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -44,6 +43,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,9 +55,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.rememberLottieComposition
+import com.kelompok4.smartmaney.R
 import com.kelompok4.smartmaney.ui.theme.SmPrimary
+import com.kelompok4.smartmaney.ui.theme.SmartManeyTheme
+import com.kelompok4.smartmaney.ui.wallet.CurrencyVisualTransformation
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -73,7 +81,6 @@ fun OnboardingScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
             .statusBarsPadding()
             .navigationBarsPadding()
     ) {
@@ -94,7 +101,6 @@ fun OnboardingScreen(
                 OnboardingStep.BALANCE -> InputStep(
                     stepIndex = 1,
                     totalSteps = 2,
-                    icon = Icons.Default.AccountBalanceWallet,
                     title = "What's your current\nwallet balance?",
                     subtitle = "This sets your starting balance. You can adjust it anytime.",
                     inputValue = uiState.balanceInput,
@@ -109,7 +115,6 @@ fun OnboardingScreen(
                 OnboardingStep.BUDGET -> InputStep(
                     stepIndex = 2,
                     totalSteps = 2,
-                    icon = Icons.Default.DonutLarge,
                     title = "Set your monthly\nspending limit",
                     subtitle = "We'll track your spending against this budget each month.",
                     inputValue = uiState.budgetInput,
@@ -140,20 +145,15 @@ private fun WelcomeStep(userName: String, onGetStarted: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Box(
-            modifier = Modifier
-                .size(96.dp)
-                .clip(CircleShape)
-                .background(SmPrimary.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                Icons.Default.Savings,
-                contentDescription = null,
-                tint = SmPrimary,
-                modifier = Modifier.size(52.dp)
-            )
-        }
+        val piggyAnim by rememberLottieComposition(
+            LottieCompositionSpec.RawRes(R.raw.happy_pig)
+        )
+
+        LottieAnimation(
+            composition = piggyAnim,
+            iterations = LottieConstants.IterateForever,
+            modifier = Modifier.size(256.dp)
+        )
 
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -197,7 +197,6 @@ private fun WelcomeStep(userName: String, onGetStarted: () -> Unit) {
 private fun InputStep(
     stepIndex: Int,
     totalSteps: Int,
-    icon: ImageVector,
     title: String,
     subtitle: String,
     inputValue: String,
@@ -229,14 +228,20 @@ private fun InputStep(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        Box(
-            modifier = Modifier
-                .size(64.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(SmPrimary.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(icon, contentDescription = null, tint = SmPrimary, modifier = Modifier.size(32.dp))
+        if (stepIndex == 1) {
+            val walletAnim by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.wallet_loader))
+            LottieAnimation(
+                composition = walletAnim,
+                iterations = LottieConstants.IterateForever,
+                modifier = Modifier.size(200.dp).align(Alignment.CenterHorizontally)
+            )
+        } else {
+            val walletAnim by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.circle_portion))
+            LottieAnimation(
+                composition = walletAnim,
+                iterations = LottieConstants.IterateForever,
+                modifier = Modifier.size(200.dp).align(Alignment.CenterHorizontally)
+            )
         }
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -264,6 +269,7 @@ private fun InputStep(
             value = inputValue,
             onValueChange = onValueChange,
             label = { Text("Amount (Rp)") },
+            visualTransformation = CurrencyVisualTransformation(),
             prefix = { Text("Rp ", fontWeight = FontWeight.SemiBold) },
             isError = isError,
             supportingText = if (isError) {
@@ -423,4 +429,26 @@ private fun StepDots(current: Int, total: Int) {
 private fun formatRupiah(amount: Int): String {
     val formatter = NumberFormat.getNumberInstance(Locale.forLanguageTag("id-ID"))
     return "Rp ${formatter.format(amount)}"
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun OnBoardingScreenPreview() {
+    SmartManeyTheme {
+        OnboardingScreen(
+            uiState = OnboardingUiState(
+                step = OnboardingStep.BALANCE,
+                userName = "Alice",
+                balanceInput = "5000000",
+                budgetInput = "2000000",
+                isSaving = false,
+                balanceError = false,
+                budgetError = false
+            ),
+            {},
+            {},
+            {},
+            {}
+        ) { }
+    }
 }
