@@ -1,5 +1,6 @@
 package com.kelompok4.smartmaney.data.repository
 
+import com.google.firebase.auth.FirebaseAuth
 import com.kelompok4.smartmaney.data.local.SmartManeyDatabase
 import com.kelompok4.smartmaney.data.local.entity.BudgetCategoryEntity
 import com.kelompok4.smartmaney.data.local.entity.BudgetMetaEntity
@@ -7,6 +8,7 @@ import com.kelompok4.smartmaney.data.local.entity.ProfileEntity
 import com.kelompok4.smartmaney.data.local.entity.TransactionEntity
 import com.kelompok4.smartmaney.data.local.entity.WalletMetaEntity
 import com.kelompok4.smartmaney.data.remote.model.ReceiptData
+import com.kelompok4.smartmaney.data.remote.repository.FirestoreRepository
 import com.kelompok4.smartmaney.ui.budgetplanning.BudgetCategoryItem
 import com.kelompok4.smartmaney.ui.budgetplanning.BudgetPlanningUiState
 import com.kelompok4.smartmaney.ui.expensehistory.ExpenseCategory
@@ -27,7 +29,8 @@ import java.util.Date
 import java.util.Locale
 
 class SmartManeyRepository(
-    private val database: SmartManeyDatabase
+    private val database: SmartManeyDatabase,
+    private val firestore: FirestoreRepository
 ) {
     private val transactionDao = database.transactionDao()
     private val walletDao = database.walletDao()
@@ -138,43 +141,53 @@ class SmartManeyRepository(
         } else {
             TRANSACTION_TYPE_EXPENSE
         }
-        transactionDao.insertTransaction(
-            TransactionEntity(
-                title = normalizedTitle,
-                amount = amount,
-                type = transactionType,
-                category = if (transactionType == TRANSACTION_TYPE_EXPENSE) {
-                    DEFAULT_EXPENSE_BUDGET_CATEGORY
-                } else {
-                    DEFAULT_INCOME_CATEGORY
-                },
-                note = "",
-                paymentMethod = "Cash",
-                createdAtMillis = System.currentTimeMillis()
-            )
+        val entity = TransactionEntity(
+            title = normalizedTitle,
+            amount = amount,
+            type = transactionType,
+            category = if (transactionType == TRANSACTION_TYPE_EXPENSE) {
+                DEFAULT_EXPENSE_BUDGET_CATEGORY
+            } else {
+                DEFAULT_INCOME_CATEGORY
+            },
+            note = "",
+            paymentMethod = "Cash",
+            createdAtMillis = System.currentTimeMillis()
         )
+        val insertedId = transactionDao.insertTransaction(entity)
+        currentUid()?.let { uid ->
+            runCatching { firestore.uploadTransaction(uid, entity.copy(id = insertedId)) }
+        }
     }
 
     suspend fun deleteWalletTransaction(transactionId: String) {
-        transactionId.toLongOrNull()?.let { transactionDao.deleteTransactionById(it) }
+        val id = transactionId.toLongOrNull() ?: return
+        transactionDao.deleteTransactionById(id)
+        currentUid()?.let { uid ->
+            runCatching { firestore.deleteTransaction(uid, id) }
+        }
     }
 
     suspend fun adjustInitialBalance(delta: Int) {
         val current = walletDao.getWalletMeta() ?: WalletMetaEntity(initialBalance = DEFAULT_INITIAL_BALANCE)
-        walletDao.upsertWalletMeta(
-            current.copy(initialBalance = (current.initialBalance + delta).coerceAtLeast(0))
-        )
+        val updated = current.copy(initialBalance = (current.initialBalance + delta).coerceAtLeast(0))
+        walletDao.upsertWalletMeta(updated)
+        currentUid()?.let { uid ->
+            runCatching { firestore.uploadWalletMeta(uid, updated) }
+        }
     }
 
     suspend fun saveProfile(profileUiState: ProfileUiState) {
-        profileDao.upsertProfile(
-            ProfileEntity(
-                fullName = profileUiState.fullName.trim(),
-                email = profileUiState.email.trim(),
-                notificationsEnabled = profileUiState.notificationsEnabled,
-                darkModeEnabled = profileUiState.darkModeEnabled
-            )
+        val entity = ProfileEntity(
+            fullName = profileUiState.fullName.trim(),
+            email = profileUiState.email.trim(),
+            notificationsEnabled = profileUiState.notificationsEnabled,
+            darkModeEnabled = profileUiState.darkModeEnabled
         )
+        profileDao.upsertProfile(entity)
+        currentUid()?.let { uid ->
+            runCatching { firestore.uploadProfile(uid, entity) }
+        }
     }
 
     suspend fun syncProfileFromAuthenticatedUser(
@@ -185,19 +198,24 @@ class SmartManeyRepository(
         val currentState = current?.toProfileUiState() ?: DEFAULT_PROFILE
         val mergedName = authDisplayName?.trim().takeUnless { it.isNullOrBlank() } ?: currentState.fullName
         val mergedEmail = authEmail?.trim().takeUnless { it.isNullOrBlank() } ?: currentState.email
-        profileDao.upsertProfile(
-            ProfileEntity(
-                fullName = mergedName,
-                email = mergedEmail,
-                notificationsEnabled = currentState.notificationsEnabled,
-                darkModeEnabled = currentState.darkModeEnabled
-            )
+        val entity = ProfileEntity(
+            fullName = mergedName,
+            email = mergedEmail,
+            notificationsEnabled = currentState.notificationsEnabled,
+            darkModeEnabled = currentState.darkModeEnabled
         )
+        profileDao.upsertProfile(entity)
+        currentUid()?.let { uid ->
+            runCatching { firestore.uploadProfile(uid, entity) }
+        }
     }
 
     suspend fun updateMonthlyBudget(totalBudget: Int) {
-        val safeBudget = totalBudget.coerceAtLeast(0)
-        budgetDao.upsertBudgetMeta(BudgetMetaEntity(totalBudget = safeBudget))
+        val entity = BudgetMetaEntity(totalBudget = totalBudget.coerceAtLeast(0))
+        budgetDao.upsertBudgetMeta(entity)
+        currentUid()?.let { uid ->
+            runCatching { firestore.uploadBudgetMeta(uid, entity) }
+        }
     }
 
     suspend fun createDraftTransactionFromReceipt(receipt: ReceiptData): Long {
@@ -206,17 +224,20 @@ class SmartManeyRepository(
             ?: DEFAULT_EXPENSE_BUDGET_CATEGORY
         val normalizedPayment = receipt.paymentMethod?.trim().takeUnless { it.isNullOrBlank() } ?: "E-Wallet"
         val normalizedNote = receipt.note?.trim().orEmpty()
-        return transactionDao.insertTransaction(
-            TransactionEntity(
-                title = normalizedTitle,
-                amount = receipt.totalAmount?.coerceAtLeast(0) ?: 0,
-                type = TRANSACTION_TYPE_EXPENSE,
-                category = normalizedCategory,
-                note = normalizedNote,
-                paymentMethod = normalizedPayment,
-                createdAtMillis = receipt.transactionDateMillis ?: System.currentTimeMillis()
-            )
+        val entity = TransactionEntity(
+            title = normalizedTitle,
+            amount = receipt.totalAmount?.coerceAtLeast(0) ?: 0,
+            type = TRANSACTION_TYPE_EXPENSE,
+            category = normalizedCategory,
+            note = normalizedNote,
+            paymentMethod = normalizedPayment,
+            createdAtMillis = receipt.transactionDateMillis ?: System.currentTimeMillis()
         )
+        val insertedId = transactionDao.insertTransaction(entity)
+        currentUid()?.let { uid ->
+            runCatching { firestore.uploadTransaction(uid, entity.copy(id = insertedId)) }
+        }
+        return insertedId
     }
 
     suspend fun updateTransaction(
@@ -228,16 +249,52 @@ class SmartManeyRepository(
         newCreatedAtMillis: Long
     ) {
         val current = transactionDao.getTransactionById(transactionId) ?: return
-        transactionDao.updateTransaction(
-            current.copy(
-                amount = newAmount.coerceAtLeast(0),
-                note = newNote.trim(),
-                category = newCategory.trim(),
-                paymentMethod = newPaymentMethod.trim(),
-                createdAtMillis = newCreatedAtMillis
-            )
+        val updated = current.copy(
+            amount = newAmount.coerceAtLeast(0),
+            note = newNote.trim(),
+            category = newCategory.trim(),
+            paymentMethod = newPaymentMethod.trim(),
+            createdAtMillis = newCreatedAtMillis
         )
+        transactionDao.updateTransaction(updated)
+        currentUid()?.let { uid ->
+            runCatching { firestore.uploadTransaction(uid, updated) }
+        }
     }
+
+    suspend fun syncFromFirestore(uid: String) {
+        val fsTransactions = firestore.fetchAllTransactions(uid)
+        val fsWalletMeta = firestore.fetchWalletMeta(uid)
+        val fsBudgetMeta = firestore.fetchBudgetMeta(uid)
+        val fsBudgetCategories = firestore.fetchAllBudgetCategories(uid)
+        val fsProfile = firestore.fetchProfile(uid)
+
+        val hasRemoteData = fsTransactions.isNotEmpty() || fsWalletMeta != null || fsBudgetMeta != null
+        if (hasRemoteData) {
+            transactionDao.deleteAllTransactions()
+            for (t in fsTransactions) transactionDao.insertTransaction(t)
+            fsWalletMeta?.let { walletDao.upsertWalletMeta(it) }
+            fsBudgetMeta?.let { budgetDao.upsertBudgetMeta(it) }
+            if (fsBudgetCategories.isNotEmpty()) budgetDao.upsertBudgetCategories(fsBudgetCategories)
+            fsProfile?.let { profileDao.upsertProfile(it) }
+        } else {
+            uploadLocalDataToFirestore(uid)
+        }
+    }
+
+    suspend fun clearLocalData() {
+        database.clearAllTables()
+    }
+
+    private suspend fun uploadLocalDataToFirestore(uid: String) {
+        for (t in transactionDao.getAllTransactions()) firestore.uploadTransaction(uid, t)
+        walletDao.getWalletMeta()?.let { firestore.uploadWalletMeta(uid, it) }
+        budgetDao.getBudgetMeta()?.let { firestore.uploadBudgetMeta(uid, it) }
+        for (c in budgetDao.getAllBudgetCategories()) firestore.uploadBudgetCategory(uid, c)
+        profileDao.getProfile()?.let { firestore.uploadProfile(uid, it) }
+    }
+
+    private fun currentUid(): String? = FirebaseAuth.getInstance().currentUser?.uid
 
     private fun observeMonthlyExpenseTotal(): Flow<Int> {
         val (startMillis, endMillis) = currentMonthRange()
@@ -329,10 +386,19 @@ class SmartManeyRepository(
     suspend fun isOnboardingComplete(): Boolean = walletDao.getWalletMeta() != null
 
     suspend fun completeOnboarding(initialBalance: Int, monthlyBudget: Int) {
-        walletDao.upsertWalletMeta(WalletMetaEntity(initialBalance = initialBalance.coerceAtLeast(0)))
-        budgetDao.upsertBudgetMeta(BudgetMetaEntity(totalBudget = monthlyBudget.coerceAtLeast(0)))
+        val walletMeta = WalletMetaEntity(initialBalance = initialBalance.coerceAtLeast(0))
+        val budgetMeta = BudgetMetaEntity(totalBudget = monthlyBudget.coerceAtLeast(0))
+        walletDao.upsertWalletMeta(walletMeta)
+        budgetDao.upsertBudgetMeta(budgetMeta)
         if (budgetDao.countBudgetCategories() == 0L) {
             budgetDao.upsertBudgetCategories(DEFAULT_BUDGET_CATEGORIES)
+        }
+        currentUid()?.let { uid ->
+            runCatching {
+                firestore.uploadWalletMeta(uid, walletMeta)
+                firestore.uploadBudgetMeta(uid, budgetMeta)
+                for (c in DEFAULT_BUDGET_CATEGORIES) firestore.uploadBudgetCategory(uid, c)
+            }
         }
     }
 

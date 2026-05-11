@@ -233,24 +233,35 @@ fun AppNavHost(
                                 )
                                 firebaseAuth.signInWithCredential(firebaseCredential)
                                     .addOnCompleteListener { authTask ->
-                                        isGoogleSigningIn = false
                                         if (authTask.isSuccessful) {
-                                            authenticatedUserId = authTask.result?.user?.uid
-                                            syncProfileWithAuthenticatedUser(authTask.result?.user)
+                                            val user = authTask.result?.user
+                                            authenticatedUserId = user?.uid
+                                            syncProfileWithAuthenticatedUser(user)
                                             googleSignInError = null
                                             scope.launch {
-                                                val displayName = authTask.result?.user?.displayName.orEmpty()
-                                                if (appContainer.repository.isOnboardingComplete()) {
-                                                    navigateToDashboardFromLogin()
-                                                } else {
-                                                    onboardingViewModel.setUserName(displayName)
-                                                    navController.navigate(AppDestinations.ONBOARDING_ROUTE) {
-                                                        popUpTo(AppDestinations.LOGIN_ROUTE) { inclusive = true }
-                                                        launchSingleTop = true
+                                                try {
+                                                    val uid = user?.uid
+                                                    if (uid != null) {
+                                                        runCatching {
+                                                            appContainer.repository.syncFromFirestore(uid)
+                                                        }
                                                     }
+                                                    val displayName = user?.displayName.orEmpty()
+                                                    if (appContainer.repository.isOnboardingComplete()) {
+                                                        navigateToDashboardFromLogin()
+                                                    } else {
+                                                        onboardingViewModel.setUserName(displayName)
+                                                        navController.navigate(AppDestinations.ONBOARDING_ROUTE) {
+                                                            popUpTo(AppDestinations.LOGIN_ROUTE) { inclusive = true }
+                                                            launchSingleTop = true
+                                                        }
+                                                    }
+                                                } finally {
+                                                    isGoogleSigningIn = false
                                                 }
                                             }
                                         } else {
+                                            isGoogleSigningIn = false
                                             googleSignInError = googleSignInFailedMessage
                                         }
                                     }
@@ -314,6 +325,7 @@ fun AppNavHost(
                         authenticatedUserId = null
                         scope.launch {
                             credentialManager.clearCredentialState(ClearCredentialStateRequest())
+                            runCatching { appContainer.repository.clearLocalData() }
                         }
                         navController.navigate(AppDestinations.LOGIN_ROUTE) {
                             popUpTo(AppDestinations.DASHBOARD_ROUTE) { inclusive = true }
@@ -439,6 +451,7 @@ fun AppNavHost(
                         authenticatedUserId = null
                         scope.launch {
                             credentialManager.clearCredentialState(ClearCredentialStateRequest())
+                            runCatching { appContainer.repository.clearLocalData() }
                         }
                         navController.navigate(AppDestinations.LOGIN_ROUTE) {
                             popUpTo(AppDestinations.DASHBOARD_ROUTE) { inclusive = true }

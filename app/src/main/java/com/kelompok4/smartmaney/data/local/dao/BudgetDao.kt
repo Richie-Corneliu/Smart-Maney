@@ -25,6 +25,9 @@ interface BudgetDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertBudgetCategories(entities: List<BudgetCategoryEntity>)
 
+    @Query("SELECT * FROM budget_category ORDER BY name ASC")
+    suspend fun getAllBudgetCategories(): List<BudgetCategoryEntity>
+
     @Query("SELECT COUNT(*) FROM budget_category")
     suspend fun countBudgetCategories(): Long
 }
