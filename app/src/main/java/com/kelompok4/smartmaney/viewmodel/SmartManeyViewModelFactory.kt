@@ -16,7 +16,9 @@ class SmartManeyViewModelFactory(
             modelClass.isAssignableFrom(OnboardingViewModel::class.java) -> OnboardingViewModel(repository) as T
             modelClass.isAssignableFrom(DashboardViewModel::class.java) -> DashboardViewModel(repository) as T
             modelClass.isAssignableFrom(WalletViewModel::class.java) -> WalletViewModel(repository) as T
-            modelClass.isAssignableFrom(ExpenseHistoryViewModel::class.java) -> ExpenseHistoryViewModel(repository) as T
+            modelClass.isAssignableFrom(ExpenseHistoryViewModel::class.java) -> ExpenseHistoryViewModel(
+                repository
+            ) as T
             modelClass.isAssignableFrom(BudgetPlanningViewModel::class.java) -> BudgetPlanningViewModel(repository) as T
             modelClass.isAssignableFrom(ProfileViewModel::class.java) -> ProfileViewModel(repository) as T
             modelClass.isAssignableFrom(SuggestionViewModel::class.java) -> SuggestionViewModel(repository) as T

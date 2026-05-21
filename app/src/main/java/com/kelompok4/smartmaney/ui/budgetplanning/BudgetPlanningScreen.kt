@@ -24,6 +24,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -69,7 +70,7 @@ fun BudgetPlanningScreen(
                 title = { Text("Budget Planning", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Kembali")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
@@ -112,13 +113,33 @@ fun BudgetPlanningScreen(
         if (showBudgetEditor) {
             AlertDialog(
                 onDismissRequest = { showBudgetEditor = false },
-                title = { Text("Edit Total Budget") },
+                containerColor = MaterialTheme.colorScheme.surface, // Memastikan latar belakang bersih
+                shape = RoundedCornerShape(28.dp), // Sudut melengkung halus khas Material 3
+                title = {
+                    Text(
+                        text = "Edit Total Budget",
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                },
                 text = {
                     OutlinedTextField(
                         value = budgetInput,
                         onValueChange = { budgetInput = it.filter(Char::isDigit) },
                         label = { Text("Total budget") },
-                        singleLine = true
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        // Menyelaraskan seluruh elemen warna ke tema aplikasi kalian
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = SmPrimary,      // Garis hijau saat diketik
+                            unfocusedBorderColor = SmDivider,   // Garis abu-abu saat diam
+                            cursorColor = SmPrimary,            // Kursor hijau
+                            focusedLabelColor = SmPrimary,       // Label teks hijau saat aktif
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                        )
                     )
                 },
                 confirmButton = {
@@ -131,12 +152,12 @@ fun BudgetPlanningScreen(
                             showBudgetEditor = false
                         }
                     ) {
-                        Text("Save")
+                        Text("Save", color = SmPrimary, fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showBudgetEditor = false }) {
-                        Text("Cancel")
+                        Text("Cancel", color = SmMuted)
                     }
                 }
             )

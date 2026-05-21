@@ -35,35 +35,69 @@ data class ExpenseDayGroup(
     val items: List<ExpenseTransaction>
 )
 
+enum class ExpenseSortOrder(val displayName: String) {
+    DateNewest("Terbaru"),
+    DateOldest("Terlama"),
+    AmountLargest("Terbesar (Rp)"),
+    AmountSmallest("Terkecil (Rp)")
+}
+
 data class ExpenseHistoryUiState(
     val selectedFilter: ExpenseFilter = ExpenseFilter.Daily,
-    val groups: List<ExpenseDayGroup> = emptyList()
+    val groups: List<ExpenseDayGroup> = emptyList(),
+    val searchQuery: String = "",                                  // Parameter baru
+    val sortOrder: ExpenseSortOrder = ExpenseSortOrder.DateNewest  // Parameter baru
 )
 
 fun buildExpenseHistoryState(
     selectedFilter: ExpenseFilter,
+    searchQuery: String = "",
+    sortOrder: ExpenseSortOrder = ExpenseSortOrder.DateNewest,
     nowMillis: Long = System.currentTimeMillis(),
     source: List<ExpenseTransaction> = emptyList()
 ): ExpenseHistoryUiState {
+
+    // 1. Saring data berdasarkan tab aktif dan kata kunci pencarian
     val filtered = source
         .filter { transaction -> matchesFilter(transaction.timestampMillis, selectedFilter, nowMillis) }
-        .sortedByDescending { it.timestampMillis }
+        .filter { transaction ->
+            if (searchQuery.isBlank()) true
+            else transaction.title.contains(searchQuery, ignoreCase = true)
+        }
 
     val dayGroups = filtered
         .groupBy { startOfDayMillis(it.timestampMillis) }
         .toList()
-        .sortedByDescending { it.first }
+        // KUNCI PERBAIKAN: Mengurutkan urutan grup hari/tanggal di layar luar
+        .let { list ->
+            when (sortOrder) {
+                ExpenseSortOrder.DateOldest -> list.sortedBy { it.first }
+                ExpenseSortOrder.AmountLargest -> list.sortedByDescending { pair -> pair.second.sumOf { it.amount } } // Total harian terbesar di atas
+                ExpenseSortOrder.AmountSmallest -> list.sortedBy { pair -> pair.second.sumOf { it.amount } }   // Total harian terkecil di atas
+                else -> list.sortedByDescending { it.first } // DateNewest (Terbaru)
+            }
+        }
         .map { (dayStartMillis, items) ->
+            // 2. Mengurutkan item transaksi di dalam hari tersebut
+            val sortedItems = when (sortOrder) {
+                ExpenseSortOrder.DateNewest -> items.sortedByDescending { it.timestampMillis }
+                ExpenseSortOrder.DateOldest -> items.sortedBy { it.timestampMillis }
+                ExpenseSortOrder.AmountLargest -> items.sortedByDescending { it.amount }
+                ExpenseSortOrder.AmountSmallest -> items.sortedBy { it.amount }
+            }
+
             ExpenseDayGroup(
                 headerLabel = formatDayHeader(dayStartMillis, nowMillis),
                 totalAmount = items.sumOf { it.amount },
-                items = items.sortedByDescending { it.timestampMillis }
+                items = sortedItems
             )
         }
 
     return ExpenseHistoryUiState(
         selectedFilter = selectedFilter,
-        groups = dayGroups
+        groups = dayGroups,
+        searchQuery = searchQuery,
+        sortOrder = sortOrder
     )
 }
 

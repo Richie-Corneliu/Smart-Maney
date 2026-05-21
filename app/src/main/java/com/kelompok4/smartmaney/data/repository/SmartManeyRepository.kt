@@ -14,6 +14,7 @@ import com.kelompok4.smartmaney.ui.budgetplanning.BudgetPlanningUiState
 import com.kelompok4.smartmaney.ui.expensehistory.ExpenseCategory
 import com.kelompok4.smartmaney.ui.expensehistory.ExpenseFilter
 import com.kelompok4.smartmaney.ui.expensehistory.ExpenseHistoryUiState
+import com.kelompok4.smartmaney.ui.expensehistory.ExpenseSortOrder
 import com.kelompok4.smartmaney.ui.expensehistory.ExpenseTransaction
 import com.kelompok4.smartmaney.ui.expensehistory.buildExpenseHistoryState
 import com.kelompok4.smartmaney.ui.profile.ProfileUiState
@@ -21,6 +22,7 @@ import com.kelompok4.smartmaney.ui.wallet.WalletTransaction
 import com.kelompok4.smartmaney.ui.wallet.WalletTransactionType
 import com.kelompok4.smartmaney.ui.wallet.WalletUiState
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import java.text.SimpleDateFormat
@@ -110,7 +112,11 @@ class SmartManeyRepository(
         )
     }
 
-    fun expenseHistoryUiState(selectedFilter: Flow<ExpenseFilter>): Flow<ExpenseHistoryUiState> {
+    fun expenseHistoryUiState(
+        selectedFilter: Flow<ExpenseFilter>,
+        searchQuery: Flow<String>,         // Kabel masuk pencarian
+        sortOrder: Flow<ExpenseSortOrder>  // Kabel masuk pengurutan
+    ): Flow<ExpenseHistoryUiState> {
         val expenses = transactionDao.observeTransactionsByType(TRANSACTION_TYPE_EXPENSE).map { rows ->
             rows.map { row ->
                 ExpenseTransaction(
@@ -124,8 +130,13 @@ class SmartManeyRepository(
                 )
             }
         }
-        return combine(selectedFilter, expenses) { filter, source ->
-            buildExpenseHistoryState(selectedFilter = filter, source = source)
+        return combine(selectedFilter, searchQuery, sortOrder, expenses) { filter, query, sort, source ->
+            buildExpenseHistoryState(
+                selectedFilter = filter,
+                searchQuery = query, // Mengirim teks pencarian ke mesin filter
+                sortOrder = sort,    // Mengirim opsi urutan ke mesin filter
+                source = source
+            )
         }
     }
 

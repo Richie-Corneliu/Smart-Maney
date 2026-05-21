@@ -168,11 +168,22 @@ fun AppNavHost(
     }
 
     fun navigateToTab(tab: DashboardTab) {
-        dashboardState = reduceDashboardState(dashboardState, DashboardAction.SelectTab(tab))
         val targetRoute = routeForTab(tab) ?: return
+
+        // 1. JIKA MENGKLIK TAB YANG SEDANG AKTIF (Contoh: Sedang di Adjust Budget lalu klik Home)
+        if (tab == dashboardState.selectedTab) {
+            navController.popBackStack(targetRoute, inclusive = false)
+            return
+        }
+
+        // 2. JIKA PINDAH DARI TAB LAIN (Contoh: Dari Wallet lalu klik Home)
+        dashboardState = reduceDashboardState(dashboardState, DashboardAction.SelectTab(tab))
         navController.navigate(targetRoute) {
             launchSingleTop = true
-            restoreState = true
+
+            // KUNCI PERBAIKAN: Jika tujuan akhir adalah Home, set ke false agar halaman anak (Adjust Budget) tidak ikut dipanggil kembali
+            restoreState = (tab != DashboardTab.Home)
+
             popUpTo(AppDestinations.DASHBOARD_ROUTE) {
                 saveState = true
             }
@@ -386,7 +397,11 @@ fun AppNavHost(
                         .fillMaxSize()
                         .padding(bottom = innerPadding.calculateBottomPadding()),
                     uiState = expenseHistoryUiState,
-                    onFilterSelected = expenseHistoryViewModel::selectFilter
+                    onFilterSelected = expenseHistoryViewModel::selectFilter,
+
+                    // 👉 PASTIKAN DUA BARIS INI BENAR-BENAR ADA DI KODEMU:
+                    onSearchQueryChange = expenseHistoryViewModel::updateSearchQuery,
+                    onSortOrderChange = expenseHistoryViewModel::updateSortOrder
                 )
             }
         }

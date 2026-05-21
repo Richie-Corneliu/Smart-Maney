@@ -32,6 +32,16 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -60,28 +70,108 @@ import com.kelompok4.smartmaney.ui.theme.SmartManeyTheme
 fun ExpenseHistoryScreen(
     modifier: Modifier = Modifier,
     uiState: ExpenseHistoryUiState,
-    onFilterSelected: (ExpenseFilter) -> Unit
+    onFilterSelected: (ExpenseFilter) -> Unit,
+    onSearchQueryChange: (String) -> Unit = {},
+    onSortOrderChange: (ExpenseSortOrder) -> Unit = {}
 ) {
+    var isSearchActive by remember { mutableStateOf(false) }
+    var showSortMenu by remember { mutableStateOf(false) }
+
+    // 1. SOLUSI: State lokal untuk menampung ketikan secara instan tanpa delay
+    var typedQuery by remember { mutableStateOf("") }
 
     Scaffold(
         modifier = modifier,
         containerColor = SmBackgroundAlt,
         topBar = {
-            TopAppBar(title = { Text(stringResource(R.string.expense_history_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = SmTextPrimary) },
-                actions = {
-                    IconButton(onClick = {}) {
-                        Icon(
-                            Icons.Default.Search,
-                            stringResource(R.string.expense_history_search)
+            TopAppBar(
+                title = {
+                    if (isSearchActive) {
+                        TextField(
+                            value = typedQuery, // Menggunakan state lokal
+                            onValueChange = { newText ->
+                                typedQuery = newText          // 2. Teks di layar langsung berubah instan
+                                onSearchQueryChange(newText)  // 3. Memerintahkan database memfilter di background
+                            },
+                            placeholder = { Text("Cari transaksi...", color = SmMuted) },
+                            singleLine = true,
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                focusedTextColor = SmTextPrimary,
+                                unfocusedTextColor = SmTextPrimary
+                            ),
+                            modifier = Modifier.fillMaxWidth()
                         )
+                    } else {
+                        Text(stringResource(R.string.expense_history_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = SmTextPrimary)
                     }
-                })
+                },
+                actions = {
+                    if (isSearchActive) {
+                        IconButton(onClick = {
+                            isSearchActive = false
+                            typedQuery = ""             // 4. Reset teks lokal saat pencarian ditutup
+                            onSearchQueryChange("")     // 5. Reset filter database
+                        }) {
+                            Icon(Icons.Default.Close, "Tutup", tint = SmTextPrimary)
+                        }
+                    } else {
+                        IconButton(onClick = { isSearchActive = true }) {
+                            Icon(Icons.Default.Search, stringResource(R.string.expense_history_search), tint = SmTextPrimary)
+                        }
+                        Box {
+                            IconButton(onClick = { showSortMenu = true }) {
+                                Icon(Icons.Default.Sort, "Urutkan", tint = SmTextPrimary)
+                            }
+                            DropdownMenu(
+                                expanded = showSortMenu,
+                                onDismissRequest = { showSortMenu = false },
+                                containerColor = MaterialTheme.colorScheme.surface
+                            ) {
+                                ExpenseSortOrder.entries.forEach { order ->
+                                    val isSelected = uiState.sortOrder == order
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                text = order.displayName,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                color = if (isSelected) SmPrimary else SmTextPrimary
+                                            )
+                                        },
+                                        onClick = {
+                                            onSortOrderChange(order)
+                                            showSortMenu = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            )
         }
     ){ innerPadding ->
         Column(Modifier.fillMaxSize().padding(innerPadding)) {
             Tabs(selected = uiState.selectedFilter, onSelect = onFilterSelected)
             HorizontalDivider(color = SmDivider)
             LazyColumn(Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
+
+                // Pesan peringatan jika data yang dicari tidak ditemukan
+                if (uiState.groups.isEmpty()) {
+                    item {
+                        Spacer(Modifier.height(40.dp))
+                        Text(
+                            text = "Tidak ada transaksi ditemukan.",
+                            color = SmMuted,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                }
+
                 uiState.groups.forEach { group ->
                     item(group.headerLabel) {
                         Spacer(Modifier.height(14.dp))
@@ -173,10 +263,14 @@ private fun PreviewExpenseHistoryScreen() {
         ExpenseHistoryScreen(
             uiState = buildExpenseHistoryState(
                 selectedFilter = ExpenseFilter.Daily,
+                searchQuery = "",                                // Parameter baru wajib diisi untuk preview
+                sortOrder = ExpenseSortOrder.DateNewest,         // Parameter baru wajib diisi untuk preview
                 nowMillis = now,
                 source = previewTransactions(now)
             ),
-            onFilterSelected = {}
+            onFilterSelected = {},
+            onSearchQueryChange = {},                            // Jembatan baru (kosongkan saja untuk preview)
+            onSortOrderChange = {}                               // Jembatan baru (kosongkan saja untuk preview)
         )
     }
 }
