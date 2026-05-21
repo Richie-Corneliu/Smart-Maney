@@ -92,6 +92,7 @@ fun DashboardScreen(
     onLogoutClick: () -> Unit,
     onScanReceiptClick: () -> Unit,
     onMonthlyRecapClick: () -> Unit,
+    onScheduledBillsClick: () -> Unit,
     showNavigationBar: Boolean = true
 ) {
     val totalSpent = spendingByCategory.values.sum()
@@ -146,6 +147,7 @@ fun DashboardScreen(
                 onAdjustBudgetClick = onAdjustBudgetClick,
                 onLogoutClick = onLogoutClick,
                 onMonthlyRecapClick = onMonthlyRecapClick,
+                onScheduledBillsClick = onScheduledBillsClick,
                 categories = categories
             )
         }
@@ -160,6 +162,7 @@ fun DashboardScreen(
             onAdjustBudgetClick = onAdjustBudgetClick,
             onLogoutClick = onLogoutClick,
             onMonthlyRecapClick = onMonthlyRecapClick,
+            onScheduledBillsClick = onScheduledBillsClick,
             categories = categories
         )
     }
@@ -176,7 +179,8 @@ private fun DashboardContent(
     onAdjustBudgetClick: () -> Unit,
     onLogoutClick: () -> Unit,
     onMonthlyRecapClick: () -> Unit,
-    categories: List<SpendingCategory>
+    categories: List<SpendingCategory>,
+    onScheduledBillsClick: () -> Unit
 ) {
     Column(
         modifier = modifier
@@ -215,7 +219,8 @@ private fun DashboardContent(
                 modifier = Modifier.weight(1f),
                 title = stringResource(R.string.scheduled_bills),
                 subtitle = stringResource(R.string.scheduled_bills_subtitle),
-                marker = stringResource(R.string.scheduled_bills_marker)
+                marker = stringResource(R.string.scheduled_bills_marker),
+                onClick = onScheduledBillsClick
             )
             InsightCard(
                 modifier = Modifier.weight(1f),
@@ -561,6 +566,7 @@ private fun DashboardScreenPreview() {
             onLogoutClick = {},
             onScanReceiptClick = {},
             onMonthlyRecapClick = {},
+            onScheduledBillsClick = {},
         )
     }
 }

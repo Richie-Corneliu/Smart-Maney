@@ -77,6 +77,7 @@ import com.kelompok4.smartmaney.ui.login.LoginScreen
 import com.kelompok4.smartmaney.ui.onboarding.OnboardingScreen
 import com.kelompok4.smartmaney.ui.profile.ProfileScreen
 import com.kelompok4.smartmaney.ui.scanreceipt.ScanReceiptScreen
+import com.kelompok4.smartmaney.ui.scheduledbills.ScheduledBillsScreen
 import com.kelompok4.smartmaney.ui.suggestion.SuggestionScreen
 import com.kelompok4.smartmaney.ui.theme.SmMuted
 import com.kelompok4.smartmaney.ui.theme.SmPrimary
@@ -91,6 +92,7 @@ import com.kelompok4.smartmaney.viewmodel.SmartManeyViewModelFactory
 import com.kelompok4.smartmaney.viewmodel.SuggestionViewModel
 import com.kelompok4.smartmaney.viewmodel.TransactionDetailViewModel
 import com.kelompok4.smartmaney.viewmodel.WalletViewModel
+import com.kelompok4.smartmaney.viewmodel.ScheduledBillsViewModel
 import kotlinx.coroutines.launch
 
 @Composable
@@ -154,6 +156,9 @@ fun AppNavHost(
     val budgetPlanningUiState by budgetPlanningViewModel.uiState.collectAsState()
     val profileUiState by profileViewModel.uiState.collectAsState()
     val scanReceiptUiState by scanReceiptViewModel.uiState.collectAsState()
+
+    val scheduledBillsViewModel: ScheduledBillsViewModel = viewModel()
+    val scheduledBillsUiState by scheduledBillsViewModel.uiState.collectAsState()
 
     fun syncProfileWithAuthenticatedUser(user: FirebaseUser?) {
         if (user == null) return
@@ -344,6 +349,7 @@ fun AppNavHost(
                         }
                     },
                     onScanReceiptClick = { navController.navigate(AppDestinations.SCAN_RECEIPT_ROUTE) },
+                    onScheduledBillsClick = { navController.navigate("scheduled_bills_route") },
                     showNavigationBar = false,
                     onMonthlyRecapClick = {
                         expenseHistoryViewModel.selectFilter(ExpenseFilter.Monthly)
@@ -546,6 +552,20 @@ fun AppNavHost(
                     navController.navigate(AppDestinations.BUDGET_PLANNING_ROUTE)
                 },
                 viewModel = suggestionViewModel
+            )
+        }
+
+        composable(route = "scheduled_bills_route") {
+            ScheduledBillsScreen(
+                uiState = scheduledBillsUiState,
+                onBackClick = { navController.popBackStack() },
+                onPayClick = { billId -> scheduledBillsViewModel.markAsPaid(billId) },
+                onAddBill = { title, amt, start, end, freq ->
+                    scheduledBillsViewModel.addBill(title, amt, "Umum", start, end, freq)
+                },
+                onUpdateBill = { id, title, amt, start, end, freq ->
+                    scheduledBillsViewModel.updateBill(id, title, amt, start, end, freq)
+                }
             )
         }
     }
