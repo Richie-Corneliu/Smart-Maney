@@ -36,7 +36,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.FlashOff
 import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material.icons.filled.PhotoCamera
-import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -61,8 +60,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
-import com.kelompok4.smartmaney.ui.theme.SmPrimary
-import com.kelompok4.smartmaney.ui.theme.SmSurfaceMuted
+import com.kelompok4.smartmaney.ui.theme.SmartManeyTheme
 import com.kelompok4.smartmaney.viewmodel.ScanReceiptUiState
 import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
@@ -103,6 +101,7 @@ fun ScanReceiptScreen(
     var cameraControl by remember { mutableStateOf<androidx.camera.core.CameraControl?>(null) }
     var cameraProvider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
     var imageCaptureUseCase by remember { mutableStateOf<ImageCapture?>(null) }
+    var previewViewRef by remember { mutableStateOf<PreviewView?>(null) }
 
     LaunchedEffect(uiState.isProcessing) {
         if (uiState.isProcessing) {
@@ -110,6 +109,28 @@ fun ScanReceiptScreen(
             cameraControl = null
             imageCaptureUseCase = null
             isTorchOn = false
+        } else {
+            val provider = cameraProvider ?: return@LaunchedEffect
+            val pv = previewViewRef ?: return@LaunchedEffect
+
+            val preview = Preview.Builder().build().also {
+                it.surfaceProvider = pv.surfaceProvider
+            }
+            val imageCapture = ImageCapture.Builder()
+                .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                .build()
+
+            try {
+                provider.unbindAll()
+                val camera = provider.bindToLifecycle(
+                    lifecycleOwner,
+                    CameraSelector.DEFAULT_BACK_CAMERA,
+                    preview,
+                    imageCapture
+                )
+                cameraControl = camera.cameraControl
+                imageCaptureUseCase = imageCapture
+            } catch (_: Exception) {}
         }
     }
 
@@ -160,7 +181,7 @@ fun ScanReceiptScreen(
                         Icon(
                             if (isTorchOn) Icons.Default.FlashOn else Icons.Default.FlashOff,
                             contentDescription = "Flash",
-                            tint = if (isTorchOn) SmPrimary else Color.Black
+                            tint = if (isTorchOn) MaterialTheme.colorScheme.primary else Color.White
                         )
                     }
                 }
@@ -171,9 +192,7 @@ fun ScanReceiptScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(Color.Black)
         ) {
-
             if (hasCameraPermission) {
                 AndroidView(
                     modifier = Modifier.fillMaxSize(),
@@ -184,6 +203,7 @@ fun ScanReceiptScreen(
                                 ViewGroup.LayoutParams.MATCH_PARENT
                             )
                         }
+                        previewViewRef = previewView
 
                         val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
                         cameraProviderFuture.addListener({
@@ -235,20 +255,17 @@ fun ScanReceiptScreen(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .background(Color.White) // Background putih tetap sampai bawah layar
+                    .background(MaterialTheme.colorScheme.surface)
                     .navigationBarsPadding() // INI KUNCINYA: Mendorong isi ke atas menghindari tombol sistem
                     .padding(vertical = 24.dp, horizontal = 32.dp), // Padding internal tombol
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-// Tombol Gallery
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(
                         modifier = Modifier
                             .size(48.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(SmSurfaceMuted)
-                            // INI KUNCINYA: Memanggil Photo Picker saat ditekan
                             .clickable {
                                 photoPickerLauncher.launch(
                                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -267,7 +284,6 @@ fun ScanReceiptScreen(
                     modifier = Modifier
                         .size(72.dp)
                         .clip(CircleShape)
-                        .background(SmPrimary)
                         .clickable {
                             takePhoto(context, imageCaptureUseCase) { photoFile ->
                                 scope.launch {
@@ -288,7 +304,7 @@ fun ScanReceiptScreen(
                 // Tombol Auto
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(
-                        modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(SmSurfaceMuted),
+                        modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)),
                         contentAlignment = Alignment.Center
                     ) { Text("A", fontSize = 14.sp, fontWeight = FontWeight.Bold) }
                     Spacer(modifier = Modifier.height(8.dp))
@@ -308,7 +324,6 @@ fun ScanReceiptScreen(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         CircularProgressIndicator(
-                            color = SmPrimary,
                             strokeWidth = 3.dp,
                             modifier = Modifier.size(48.dp)
                         )
@@ -323,21 +338,16 @@ fun ScanReceiptScreen(
             }
 
             uiState.errorMessage?.let { message ->
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(Color.White)
-                        .padding(16.dp)
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(message, color = MaterialTheme.colorScheme.error)
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Button(onClick = onDismissError) {
+                androidx.compose.material3.AlertDialog(
+                    onDismissRequest = onDismissError,
+                    confirmButton = {
+                        androidx.compose.material3.TextButton(onClick = onDismissError) {
                             Text("Dismiss")
                         }
-                    }
-                }
+                    },
+                    title = { Text("Error") },
+                    text = { Text(message) }
+                )
             }
         }
     }
@@ -406,4 +416,19 @@ private fun calculateInSampleSize(width: Int, height: Int, maxDimension: Int): I
         inSampleSize *= 2
     }
     return inSampleSize
+}
+
+@androidx.compose.ui.tooling.preview.Preview
+@Composable
+fun ScanReceiptScreenPreview() {
+    SmartManeyTheme {
+        ScanReceiptScreen(
+            onBackClick = {},
+            uiState = ScanReceiptUiState(isProcessing = true),
+            onImageCaptured = {},
+            onNavigateToDetail = {},
+            onNavigationConsumed = {},
+            onDismissError = {}
+        )
+    }
 }

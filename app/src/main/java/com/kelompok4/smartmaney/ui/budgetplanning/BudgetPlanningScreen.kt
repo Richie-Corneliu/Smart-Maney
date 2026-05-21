@@ -41,15 +41,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.kelompok4.smartmaney.ui.theme.LocalCurrency
 import com.kelompok4.smartmaney.ui.theme.SmDanger
 import com.kelompok4.smartmaney.ui.theme.SmDivider
 import com.kelompok4.smartmaney.ui.theme.SmMuted
 import com.kelompok4.smartmaney.ui.theme.SmPrimary
-import com.kelompok4.smartmaney.ui.theme.SmSurface
 import com.kelompok4.smartmaney.ui.theme.SmWarning
 import com.kelompok4.smartmaney.ui.theme.SmartManeyTheme
-import java.text.NumberFormat
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,7 +62,6 @@ fun BudgetPlanningScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = { Text("Budget Planning", fontWeight = FontWeight.Bold) },
@@ -233,7 +230,7 @@ private fun OverallBudgetCard(
 private fun CategoryBudgetCard(item: BudgetCategoryItem) {
     Card(
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = SmSurface),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -273,10 +270,10 @@ private fun CategoryBudgetCard(item: BudgetCategoryItem) {
     }
 }
 
-private fun formatCurrency(value: Int): String {
-    val formatter = NumberFormat.getNumberInstance(Locale.US)
-    return "Rp ${formatter.format(value)}"
-}
+@androidx.compose.runtime.Composable
+@androidx.compose.runtime.ReadOnlyComposable
+private fun formatCurrency(value: Int): String =
+    LocalCurrency.current.format(value)
 
 private val previewBudgets = listOf(
     BudgetCategoryItem("1", "Makanan & Minuman", 2500000, 2025000),

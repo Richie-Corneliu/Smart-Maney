@@ -17,11 +17,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingBag
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -29,19 +33,15 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Sort
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -50,7 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.kelompok4.smartmaney.R
-import com.kelompok4.smartmaney.ui.theme.SmBackgroundAlt
+import com.kelompok4.smartmaney.ui.theme.LocalCurrency
 import com.kelompok4.smartmaney.ui.theme.SmCategoryFood
 import com.kelompok4.smartmaney.ui.theme.SmCategoryFoodBg
 import com.kelompok4.smartmaney.ui.theme.SmCategoryHealth
@@ -59,7 +59,6 @@ import com.kelompok4.smartmaney.ui.theme.SmCategoryRent
 import com.kelompok4.smartmaney.ui.theme.SmCategoryShopping
 import com.kelompok4.smartmaney.ui.theme.SmCategoryShoppingBg
 import com.kelompok4.smartmaney.ui.theme.SmCategoryTransportBg
-import com.kelompok4.smartmaney.ui.theme.SmDivider
 import com.kelompok4.smartmaney.ui.theme.SmMuted
 import com.kelompok4.smartmaney.ui.theme.SmPrimary
 import com.kelompok4.smartmaney.ui.theme.SmTextPrimary
@@ -82,7 +81,6 @@ fun ExpenseHistoryScreen(
 
     Scaffold(
         modifier = modifier,
-        containerColor = SmBackgroundAlt,
         topBar = {
             TopAppBar(
                 title = {
@@ -93,7 +91,7 @@ fun ExpenseHistoryScreen(
                                 typedQuery = newText          // 2. Teks di layar langsung berubah instan
                                 onSearchQueryChange(newText)  // 3. Memerintahkan database memfilter di background
                             },
-                            placeholder = { Text("Cari transaksi...", color = SmMuted) },
+                            placeholder = { Text("Cari transaksi...") },
                             singleLine = true,
                             colors = TextFieldDefaults.colors(
                                 focusedContainerColor = Color.Transparent,
@@ -106,7 +104,7 @@ fun ExpenseHistoryScreen(
                             modifier = Modifier.fillMaxWidth()
                         )
                     } else {
-                        Text(stringResource(R.string.expense_history_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = SmTextPrimary)
+                        Text(stringResource(R.string.expense_history_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     }
                 },
                 actions = {
@@ -116,15 +114,15 @@ fun ExpenseHistoryScreen(
                             typedQuery = ""             // 4. Reset teks lokal saat pencarian ditutup
                             onSearchQueryChange("")     // 5. Reset filter database
                         }) {
-                            Icon(Icons.Default.Close, "Tutup", tint = SmTextPrimary)
+                            Icon(Icons.Default.Close, "Tutup")
                         }
                     } else {
                         IconButton(onClick = { isSearchActive = true }) {
-                            Icon(Icons.Default.Search, stringResource(R.string.expense_history_search), tint = SmTextPrimary)
+                            Icon(Icons.Default.Search, stringResource(R.string.expense_history_search))
                         }
                         Box {
                             IconButton(onClick = { showSortMenu = true }) {
-                                Icon(Icons.Default.Sort, "Urutkan", tint = SmTextPrimary)
+                                Icon(Icons.AutoMirrored.Filled.Sort, "Urutkan")
                             }
                             DropdownMenu(
                                 expanded = showSortMenu,
@@ -138,7 +136,7 @@ fun ExpenseHistoryScreen(
                                             Text(
                                                 text = order.displayName,
                                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                                color = if (isSelected) SmPrimary else SmTextPrimary
+                                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                                             )
                                         },
                                         onClick = {
@@ -156,7 +154,7 @@ fun ExpenseHistoryScreen(
     ){ innerPadding ->
         Column(Modifier.fillMaxSize().padding(innerPadding)) {
             Tabs(selected = uiState.selectedFilter, onSelect = onFilterSelected)
-            HorizontalDivider(color = SmDivider)
+            HorizontalDivider()
             LazyColumn(Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
 
                 // Pesan peringatan jika data yang dicari tidak ditemukan
@@ -165,7 +163,6 @@ fun ExpenseHistoryScreen(
                         Spacer(Modifier.height(40.dp))
                         Text(
                             text = "Tidak ada transaksi ditemukan.",
-                            color = SmMuted,
                             modifier = Modifier.fillMaxWidth(),
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
@@ -177,13 +174,13 @@ fun ExpenseHistoryScreen(
                         Spacer(Modifier.height(14.dp))
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(group.headerLabel, style = MaterialTheme.typography.labelMedium, color = SmMuted, fontWeight = FontWeight.SemiBold)
-                            Text("-${formatRupiah(group.totalAmount)}", style = MaterialTheme.typography.labelMedium, color = SmMuted)
+                            Text("-${LocalCurrency.current.format(group.totalAmount)}", style = MaterialTheme.typography.labelMedium, color = SmMuted)
                         }
                         Spacer(Modifier.height(6.dp))
                     }
                     items(group.items, key = { it.id }) { item ->
                         ExpenseRow(item)
-                        HorizontalDivider(color = SmDivider)
+                        HorizontalDivider()
                     }
                 }
                 item { Spacer(Modifier.height(18.dp)) }
@@ -218,10 +215,10 @@ private fun ExpenseRow(item: ExpenseTransaction) {
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(item.title, style = MaterialTheme.typography.bodyLarge, color = SmTextPrimary, fontWeight = FontWeight.SemiBold)
+            Text(item.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
             Text("${item.categoryLabel} · ${item.timeLabel}", style = MaterialTheme.typography.bodySmall, color = SmMuted)
         }
-        Text("-${formatRupiah(item.amount)}", color = SmTextPrimary, fontWeight = FontWeight.Bold)
+        Text("-${LocalCurrency.current.format(item.amount)}", fontWeight = FontWeight.Bold)
     }
 }
 

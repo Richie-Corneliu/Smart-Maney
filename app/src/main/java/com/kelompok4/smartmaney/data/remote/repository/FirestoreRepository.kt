@@ -14,29 +14,30 @@ class FirestoreRepository {
     private fun userRef(uid: String) = db.collection("users").document(uid)
 
     suspend fun uploadTransaction(uid: String, entity: TransactionEntity) {
-        userRef(uid).collection("transactions")
-            .document(entity.id.toString())
-            .set(
-                mapOf(
-                    "id" to entity.id,
-                    "title" to entity.title,
-                    "amount" to entity.amount,
-                    "type" to entity.type,
-                    "category" to entity.category,
-                    "note" to entity.note,
-                    "paymentMethod" to entity.paymentMethod,
-                    "createdAtMillis" to entity.createdAtMillis
-                )
-            ).await()
+//        userRef(uid).collection("transactions")
+//            .document(entity.id.toString())
+//            .set(
+//                mapOf(
+//                    "id" to entity.id,
+//                    "title" to entity.title,
+//                    "amount" to entity.amount,
+//                    "type" to entity.type,
+//                    "category" to entity.category,
+//                    "note" to entity.note,
+//                    "paymentMethod" to entity.paymentMethod,
+//                    "createdAtMillis" to entity.createdAtMillis
+//                )
+//            ).await()
     }
 
     suspend fun deleteTransaction(uid: String, transactionId: Long) {
-        userRef(uid).collection("transactions")
-            .document(transactionId.toString())
-            .delete().await()
+//        userRef(uid).collection("transactions")
+//            .document(transactionId.toString())
+//            .delete().await()
     }
 
     suspend fun fetchAllTransactions(uid: String): List<TransactionEntity> {
+        return emptyList()
         return userRef(uid).collection("transactions")
             .get().await()
             .documents.mapNotNull { doc ->
@@ -56,11 +57,12 @@ class FirestoreRepository {
     }
 
     suspend fun uploadWalletMeta(uid: String, entity: WalletMetaEntity) {
-        userRef(uid).collection("wallet_meta").document("singleton")
-            .set(mapOf("initialBalance" to entity.initialBalance)).await()
+//        userRef(uid).collection("wallet_meta").document("singleton")
+//            .set(mapOf("initialBalance" to entity.initialBalance)).await()
     }
 
     suspend fun fetchWalletMeta(uid: String): WalletMetaEntity? {
+        return null
         val doc = userRef(uid).collection("wallet_meta").document("singleton").get().await()
         if (!doc.exists()) return null
         return runCatching {
@@ -69,11 +71,12 @@ class FirestoreRepository {
     }
 
     suspend fun uploadBudgetMeta(uid: String, entity: BudgetMetaEntity) {
-        userRef(uid).collection("budget_meta").document("singleton")
-            .set(mapOf("totalBudget" to entity.totalBudget)).await()
+//        userRef(uid).collection("budget_meta").document("singleton")
+//            .set(mapOf("totalBudget" to entity.totalBudget)).await()
     }
 
     suspend fun fetchBudgetMeta(uid: String): BudgetMetaEntity? {
+        return null
         val doc = userRef(uid).collection("budget_meta").document("singleton").get().await()
         if (!doc.exists()) return null
         return runCatching {
@@ -82,17 +85,18 @@ class FirestoreRepository {
     }
 
     suspend fun uploadBudgetCategory(uid: String, entity: BudgetCategoryEntity) {
-        userRef(uid).collection("budget_categories").document(entity.id)
-            .set(
-                mapOf(
-                    "id" to entity.id,
-                    "name" to entity.name,
-                    "allocated" to entity.allocated
-                )
-            ).await()
+//        userRef(uid).collection("budget_categories").document(entity.id)
+//            .set(
+//                mapOf(
+//                    "id" to entity.id,
+//                    "name" to entity.name,
+//                    "allocated" to entity.allocated
+//                )
+//            ).await()
     }
 
     suspend fun fetchAllBudgetCategories(uid: String): List<BudgetCategoryEntity> {
+        return emptyList()
         return userRef(uid).collection("budget_categories")
             .get().await()
             .documents.mapNotNull { doc ->
@@ -129,5 +133,18 @@ class FirestoreRepository {
                 darkModeEnabled = doc.getBoolean("darkModeEnabled") ?: false
             )
         }.getOrNull()
+    }
+
+    suspend fun deleteAllUserData(uid: String) {
+        val subcollections = listOf(
+            "transactions", "wallet_meta", "budget_meta", "budget_categories", "profile"
+        )
+        for (name in subcollections) {
+            val snapshot = userRef(uid).collection(name).get().await()
+            for (doc in snapshot.documents) {
+                runCatching { doc.reference.delete().await() }
+            }
+        }
+        runCatching { userRef(uid).delete().await() }
     }
 }

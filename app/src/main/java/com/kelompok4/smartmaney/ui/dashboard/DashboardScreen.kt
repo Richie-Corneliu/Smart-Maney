@@ -61,15 +61,11 @@ import com.kelompok4.smartmaney.ui.theme.SmCategoryHealth
 import com.kelompok4.smartmaney.ui.theme.SmCategoryRent
 import com.kelompok4.smartmaney.ui.theme.SmCategoryShopping
 import com.kelompok4.smartmaney.ui.theme.SmCategoryTransport
-import com.kelompok4.smartmaney.ui.theme.SmDivider
 import com.kelompok4.smartmaney.ui.theme.SmHeader
 import com.kelompok4.smartmaney.ui.theme.SmMuted
 import com.kelompok4.smartmaney.ui.theme.SmPrimary
 import com.kelompok4.smartmaney.ui.theme.SmSuccess
-import com.kelompok4.smartmaney.ui.theme.SmSuccessAlt
-import com.kelompok4.smartmaney.ui.theme.SmTextPrimary
 import com.kelompok4.smartmaney.ui.theme.SmartManeyTheme
-import java.text.NumberFormat
 import java.util.Locale
 
 private data class SpendingCategory(
@@ -93,6 +89,7 @@ fun DashboardScreen(
     onScanReceiptClick: () -> Unit,
     onMonthlyRecapClick: () -> Unit,
     onScheduledBillsClick: () -> Unit,
+    monthlyChangePercent: Int? = null,
     showNavigationBar: Boolean = true
 ) {
     val totalSpent = spendingByCategory.values.sum()
@@ -144,6 +141,7 @@ fun DashboardScreen(
                 monthlySpent = monthlySpent,
                 monthlyBudget = monthlyBudget,
                 budgetProgress = budgetProgress,
+                monthlyChangePercent = monthlyChangePercent,
                 onAdjustBudgetClick = onAdjustBudgetClick,
                 onLogoutClick = onLogoutClick,
                 onMonthlyRecapClick = onMonthlyRecapClick,
@@ -159,6 +157,7 @@ fun DashboardScreen(
             monthlySpent = monthlySpent,
             monthlyBudget = monthlyBudget,
             budgetProgress = budgetProgress,
+            monthlyChangePercent = monthlyChangePercent,
             onAdjustBudgetClick = onAdjustBudgetClick,
             onLogoutClick = onLogoutClick,
             onMonthlyRecapClick = onMonthlyRecapClick,
@@ -176,6 +175,7 @@ private fun DashboardContent(
     monthlySpent: Int,
     monthlyBudget: Int,
     budgetProgress: Float,
+    monthlyChangePercent: Int?,
     onAdjustBudgetClick: () -> Unit,
     onLogoutClick: () -> Unit,
     onMonthlyRecapClick: () -> Unit,
@@ -194,6 +194,7 @@ private fun DashboardContent(
             monthlySpent = monthlySpent,
             monthlyBudget = monthlyBudget,
             budgetProgress = budgetProgress,
+            monthlyChangePercent = monthlyChangePercent,
             onAdjustBudgetClick = onAdjustBudgetClick
         )
         Spacer(modifier = Modifier.height(20.dp))
@@ -276,6 +277,7 @@ private fun MonthlySummaryCard(
     monthlySpent: Int,
     monthlyBudget: Int,
     budgetProgress: Float,
+    monthlyChangePercent: Int?,
     onAdjustBudgetClick: () -> Unit
 ) {
     Card(
@@ -288,20 +290,30 @@ private fun MonthlySummaryCard(
                 .fillMaxWidth()
                 .padding(20.dp)
         ) {
-            Text(text = stringResource(R.string.monthly_spending_summary), color = SmMuted)
+            Text(text = stringResource(R.string.monthly_spending_summary))
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = formatCurrency(monthlySpent),
                 style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Bold,
-                color = SmTextPrimary
+                fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(6.dp))
+            val changeText = if (monthlyChangePercent != null) {
+                stringResource(R.string.change_vs_last_month, monthlyChangePercent)
+            } else {
+                stringResource(R.string.change_vs_last_month_no_data)
+            }
+            val changeColor = when {
+                monthlyChangePercent == null -> SmMuted
+                monthlyChangePercent > 0 -> SmDanger
+                monthlyChangePercent < 0 -> SmSuccess
+                else -> SmMuted
+            }
             Text(
-                text = stringResource(R.string.change_vs_last_month),
-                color = SmSuccess,
+                text = changeText,
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                color = changeColor
             )
             Spacer(modifier = Modifier.height(16.dp))
             LinearProgressIndicator(
@@ -311,7 +323,6 @@ private fun MonthlySummaryCard(
                     .height(8.dp)
                     .clip(RoundedCornerShape(40.dp)),
                 color = MaterialTheme.colorScheme.primary,
-                trackColor = SmDivider
             )
             Spacer(modifier = Modifier.height(8.dp))
             Row(
@@ -321,13 +332,11 @@ private fun MonthlySummaryCard(
             ) {
                 Text(
                     text = stringResource(R.string.budget_label, formatCurrency(monthlyBudget)),
-                    color = SmMuted,
                     style = MaterialTheme.typography.bodyMedium
                 )
                 TextButton(onClick = onAdjustBudgetClick) {
                     Text(
                         text = stringResource(R.string.adjust_budget),
-                        color = SmSuccessAlt,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
@@ -349,7 +358,6 @@ private fun DistributionCard(categories: List<SpendingCategory>) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(20.dp),
-                color = SmMuted,
                 style = MaterialTheme.typography.bodyLarge
             )
         } else {
@@ -411,13 +419,11 @@ private fun DonutChart(categories: List<SpendingCategory>) {
             Text(
                 text = stringResource(R.string.total_label),
                 style = MaterialTheme.typography.labelSmall,
-                color = SmMuted
             )
             Text(
                 text = stringResource(R.string.total_items_count, categories.size),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = SmTextPrimary
             )
         }
     }
@@ -540,10 +546,10 @@ private fun BottomNavItem(
     }
 }
 
-private fun formatCurrency(value: Int): String {
-    val formatter = NumberFormat.getNumberInstance(Locale.US)
-    return "Rp ${formatter.format(value)}"
-}
+@Composable
+@androidx.compose.runtime.ReadOnlyComposable
+private fun formatCurrency(value: Int): String =
+    com.kelompok4.smartmaney.ui.theme.LocalCurrency.current.format(value)
 
 @Preview(showBackground = true)
 @Composable

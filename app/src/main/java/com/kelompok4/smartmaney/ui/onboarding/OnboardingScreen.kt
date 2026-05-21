@@ -63,11 +63,10 @@ import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.kelompok4.smartmaney.R
+import com.kelompok4.smartmaney.ui.theme.LocalCurrency
 import com.kelompok4.smartmaney.ui.theme.SmPrimary
 import com.kelompok4.smartmaney.ui.theme.SmartManeyTheme
 import com.kelompok4.smartmaney.ui.wallet.CurrencyVisualTransformation
-import java.text.NumberFormat
-import java.util.Locale
 
 @Composable
 fun OnboardingScreen(
@@ -268,9 +267,9 @@ private fun InputStep(
         OutlinedTextField(
             value = inputValue,
             onValueChange = onValueChange,
-            label = { Text("Amount (Rp)") },
+            label = { Text("Amount (${LocalCurrency.current.symbol})") },
             visualTransformation = CurrencyVisualTransformation(),
-            prefix = { Text("Rp ", fontWeight = FontWeight.SemiBold) },
+            prefix = { Text("${LocalCurrency.current.symbol} ", fontWeight = FontWeight.SemiBold) },
             isError = isError,
             supportingText = if (isError) {
                 { Text(errorMessage, color = MaterialTheme.colorScheme.error) }
@@ -426,10 +425,10 @@ private fun StepDots(current: Int, total: Int) {
     }
 }
 
-private fun formatRupiah(amount: Int): String {
-    val formatter = NumberFormat.getNumberInstance(Locale.forLanguageTag("id-ID"))
-    return "Rp ${formatter.format(amount)}"
-}
+@androidx.compose.runtime.Composable
+@androidx.compose.runtime.ReadOnlyComposable
+private fun formatRupiah(amount: Int): String =
+    LocalCurrency.current.format(amount)
 
 @Preview(showBackground = true)
 @Composable

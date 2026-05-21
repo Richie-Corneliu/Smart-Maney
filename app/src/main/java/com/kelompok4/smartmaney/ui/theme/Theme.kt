@@ -9,20 +9,21 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import com.kelompok4.smartmaney.data.local.preferences.ThemeMode
 
 private val DarkColorScheme = darkColorScheme(
     primary = SmPrimary,
-    onPrimary = SmTextPrimary,
+    onPrimary = SmDarkTextPrimary,
     primaryContainer = SmHeader,
-    onPrimaryContainer = SmSurface,
-    secondary = SmMuted,
+    onPrimaryContainer = SmDarkTextPrimary,
+    secondary = SmDarkMuted,
     tertiary = SmCategoryRent,
-    background = SmBackground,
-    surface = SmSurface,
-    surfaceVariant = SmDivider,
-    onBackground = SmTextPrimary,
-    onSurface = SmTextPrimary,
-    onSurfaceVariant = SmMuted,
+    background = SmDarkBackground,
+    surface = SmDarkSurface,
+    surfaceVariant = SmDarkSurfaceVariant,
+    onBackground = SmDarkTextPrimary,
+    onSurface = SmDarkTextPrimary,
+    onSurfaceVariant = SmDarkMuted,
     error = SmDanger
 )
 
@@ -44,11 +45,16 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun SmartManeyTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    themeMode: ThemeMode = ThemeMode.SYSTEM,
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
+    val darkTheme = when (themeMode) {
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+    }
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current

@@ -15,8 +15,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -45,6 +47,7 @@ fun ProfileScreen(
     uiState: ProfileUiState,
     onAction: (ProfileAction) -> Unit,
     onLogoutClick: () -> Unit = {},
+    onSettingsClick: () -> Unit = {},
     isEmailEditable: Boolean = true
 ) {
     Scaffold(
@@ -53,6 +56,14 @@ fun ProfileScreen(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.profile_title), fontWeight = FontWeight.Bold) },
+                actions = {
+                    IconButton(onClick = onSettingsClick) {
+                        Icon(
+                            Icons.Default.Settings,
+                            contentDescription = stringResource(R.string.profile_settings)
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 )

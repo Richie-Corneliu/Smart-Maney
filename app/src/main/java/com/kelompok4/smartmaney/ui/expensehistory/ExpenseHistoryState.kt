@@ -1,6 +1,5 @@
 package com.kelompok4.smartmaney.ui.expensehistory
 
-import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -99,11 +98,6 @@ fun buildExpenseHistoryState(
         searchQuery = searchQuery,
         sortOrder = sortOrder
     )
-}
-
-fun formatRupiah(amount: Int): String {
-    val formatter = NumberFormat.getNumberInstance(Locale.forLanguageTag("id-ID"))
-    return "Rp ${formatter.format(amount)}"
 }
 
 private fun matchesFilter(timestampMillis: Long, filter: ExpenseFilter, nowMillis: Long): Boolean {

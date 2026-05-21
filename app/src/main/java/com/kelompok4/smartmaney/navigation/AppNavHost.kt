@@ -1,5 +1,7 @@
 package com.kelompok4.smartmaney.navigation
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -78,6 +80,8 @@ import com.kelompok4.smartmaney.ui.onboarding.OnboardingScreen
 import com.kelompok4.smartmaney.ui.profile.ProfileScreen
 import com.kelompok4.smartmaney.ui.scanreceipt.ScanReceiptScreen
 import com.kelompok4.smartmaney.ui.scheduledbills.ScheduledBillsScreen
+import com.kelompok4.smartmaney.ui.settings.DeleteAccountState
+import com.kelompok4.smartmaney.ui.settings.SettingsScreen
 import com.kelompok4.smartmaney.ui.suggestion.SuggestionScreen
 import com.kelompok4.smartmaney.ui.theme.SmMuted
 import com.kelompok4.smartmaney.ui.theme.SmPrimary
@@ -88,11 +92,12 @@ import com.kelompok4.smartmaney.viewmodel.ExpenseHistoryViewModel
 import com.kelompok4.smartmaney.viewmodel.OnboardingViewModel
 import com.kelompok4.smartmaney.viewmodel.ProfileViewModel
 import com.kelompok4.smartmaney.viewmodel.ScanReceiptViewModel
+import com.kelompok4.smartmaney.viewmodel.ScheduledBillsViewModel
+import com.kelompok4.smartmaney.viewmodel.SettingsViewModel
 import com.kelompok4.smartmaney.viewmodel.SmartManeyViewModelFactory
 import com.kelompok4.smartmaney.viewmodel.SuggestionViewModel
 import com.kelompok4.smartmaney.viewmodel.TransactionDetailViewModel
 import com.kelompok4.smartmaney.viewmodel.WalletViewModel
-import com.kelompok4.smartmaney.viewmodel.ScheduledBillsViewModel
 import kotlinx.coroutines.launch
 
 @Composable
@@ -126,6 +131,13 @@ fun AppNavHost(
         SmartManeyViewModelFactory(
             repository = appContainer.repository,
             geminiReceiptService = appContainer.geminiReceiptService
+        )
+    }
+    val settingsFactory = remember(appContainer) {
+        SmartManeyViewModelFactory(
+            repository = appContainer.repository,
+            themePreferenceStore = appContainer.themePreferenceStore,
+            currencyPreferenceStore = appContainer.currencyPreferenceStore
         )
     }
 
@@ -207,7 +219,11 @@ fun AppNavHost(
     NavHost(
         navController = navController,
         startDestination = resolvedStart,
-        modifier = modifier
+        modifier = modifier,
+        enterTransition = { EnterTransition.None },
+        exitTransition = { ExitTransition.None },
+        popEnterTransition = { EnterTransition.None },
+        popExitTransition = { ExitTransition.None }
     ) {
         composable(route = AppDestinations.LOGIN_ROUTE) {
             var isGoogleSigningIn by remember { mutableStateOf(false) }
@@ -331,6 +347,7 @@ fun AppNavHost(
                     monthlyBudget = dashboardSummary.monthlyBudget,
                     budgetProgress = dashboardSummary.budgetProgress,
                     spendingByCategory = dashboardSummary.spendingByCategory,
+                    monthlyChangePercent = dashboardSummary.monthlyChangePercent,
                     selectedTab = dashboardState.selectedTab,
                     onAdjustBudgetClick = {
                         navController.navigate(AppDestinations.BUDGET_PLANNING_ROUTE)
@@ -424,7 +441,7 @@ fun AppNavHost(
                         .padding(bottom = innerPadding.calculateBottomPadding()),
                     uiState = budgetPlanningUiState,
                     onBackClick = {
-                        navigateToTab(DashboardTab.Home)
+                        navController.popBackStack()
                     },
                     onBudgetUpdated = { newBudget ->
                         dashboardViewModel.updateMonthlyBudget(newBudget)
@@ -467,6 +484,9 @@ fun AppNavHost(
                     uiState = profileUiState,
                     onAction = profileViewModel::dispatch,
                     isEmailEditable = firebaseAuth.currentUser == null,
+                    onSettingsClick = {
+                        navController.navigate(AppDestinations.SETTINGS_ROUTE)
+                    },
                     onLogoutClick = {
                         firebaseAuth.signOut()
                         authenticatedUserId = null
@@ -566,6 +586,39 @@ fun AppNavHost(
                 onUpdateBill = { id, title, amt, start, end, freq ->
                     scheduledBillsViewModel.updateBill(id, title, amt, start, end, freq)
                 }
+            )
+        }
+
+        composable(route = AppDestinations.SETTINGS_ROUTE) {
+            val settingsViewModel: SettingsViewModel = viewModel(factory = settingsFactory)
+            val settingsUiState by settingsViewModel.uiState.collectAsState()
+
+            LaunchedEffect(settingsUiState.deleteState) {
+                if (settingsUiState.deleteState == DeleteAccountState.Success) {
+                    firebaseAuth.signOut()
+                    authenticatedUserId = null
+                    runCatching {
+                        credentialManager.clearCredentialState(ClearCredentialStateRequest())
+                    }
+                    settingsViewModel.acknowledgeDeleteResult()
+                    navController.navigate(AppDestinations.LOGIN_ROUTE) {
+                        popUpTo(AppDestinations.DASHBOARD_ROUTE) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            }
+
+            SettingsScreen(
+                uiState = settingsUiState,
+                exportEvents = settingsViewModel.exportEvents,
+                onBackClick = { navController.popBackStack() },
+                onThemeModeSelected = settingsViewModel::setThemeMode,
+                onCurrencySelected = settingsViewModel::setCurrency,
+                onDeleteAccountRequest = settingsViewModel::requestDeleteAccount,
+                onDeleteAccountConfirm = settingsViewModel::confirmDeleteAccount,
+                onDeleteAccountCancel = settingsViewModel::cancelDeleteAccount,
+                onDeleteAccountResultAcknowledged = settingsViewModel::acknowledgeDeleteResult,
+                onExportCsvClick = settingsViewModel::exportTransactionsCsv
             )
         }
     }

@@ -21,10 +21,11 @@ import com.kelompok4.smartmaney.ui.profile.ProfileUiState
 import com.kelompok4.smartmaney.ui.wallet.WalletTransaction
 import com.kelompok4.smartmaney.ui.wallet.WalletTransactionType
 import com.kelompok4.smartmaney.ui.wallet.WalletUiState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -64,8 +65,9 @@ class SmartManeyRepository(
     val dashboardSummary: Flow<DashboardSummary> = combine(
         profileUiState,
         budgetDao.observeBudgetMeta(),
-        observeCurrentMonthCategorySpendMap()
-    ) { profile, budgetMeta, spentByCategory ->
+        observeCurrentMonthCategorySpendMap(),
+        observePreviousMonthExpenseTotal()
+    ) { profile, budgetMeta, spentByCategory, previousMonthExpense ->
         val normalizedSpentByCategory = spentByCategory.entries
             .groupBy(keySelector = { normalizeBudgetCategoryName(it.key) }, valueTransform = { it.value })
             .mapValues { (_, values) -> values.sum() }
@@ -77,12 +79,18 @@ class SmartManeyRepository(
         } else {
             0f
         }
+        val monthlyChangePercent = if (previousMonthExpense > 0) {
+            (((monthlyExpense - previousMonthExpense).toDouble() / previousMonthExpense) * 100).toInt()
+        } else {
+            null
+        }
         DashboardSummary(
             userName = profile.fullName.ifBlank { "User" },
             monthlySpent = monthlyExpense,
             monthlyBudget = monthlyBudget,
             budgetProgress = progress,
-            spendingByCategory = normalizedSpentByCategory
+            spendingByCategory = normalizedSpentByCategory,
+            monthlyChangePercent = monthlyChangePercent
         )
     }
 
@@ -294,7 +302,15 @@ class SmartManeyRepository(
     }
 
     suspend fun clearLocalData() {
-        database.clearAllTables()
+        withContext(Dispatchers.IO) { database.clearAllTables() }
+    }
+
+    suspend fun getAllTransactionsForExport(): List<TransactionEntity> =
+        transactionDao.getAllTransactions()
+
+    suspend fun deleteAccountData(uid: String) {
+        runCatching { firestore.deleteAllUserData(uid) }
+        withContext(Dispatchers.IO) { database.clearAllTables() }
     }
 
     private suspend fun uploadLocalDataToFirestore(uid: String) {
@@ -309,6 +325,15 @@ class SmartManeyRepository(
 
     private fun observeMonthlyExpenseTotal(): Flow<Int> {
         val (startMillis, endMillis) = currentMonthRange()
+        return transactionDao.observeTotalAmountByTypeBetween(
+            type = TRANSACTION_TYPE_EXPENSE,
+            startMillis = startMillis,
+            endMillis = endMillis
+        )
+    }
+
+    private fun observePreviousMonthExpenseTotal(): Flow<Int> {
+        val (startMillis, endMillis) = previousMonthRange()
         return transactionDao.observeTotalAmountByTypeBetween(
             type = TRANSACTION_TYPE_EXPENSE,
             startMillis = startMillis,
@@ -336,6 +361,20 @@ class SmartManeyRepository(
             rows.associate { row -> row.category to row.total }
         }
     }
+
+    fun observeIncomeBetween(startMillis: Long, endMillis: Long): Flow<Int> {
+        return transactionDao.observeTotalAmountByTypeBetween(
+            type = TRANSACTION_TYPE_INCOME,
+            startMillis = startMillis,
+            endMillis = endMillis
+        )
+    }
+
+    fun observeBudgetMeta(): Flow<BudgetMetaEntity?> = budgetDao.observeBudgetMeta()
+
+    fun observeBudgetCategories(): Flow<List<BudgetCategoryEntity>> = budgetDao.observeBudgetCategories()
+
+    fun normalizeCategoryToCanonical(rawCategory: String): String = normalizeBudgetCategoryName(rawCategory)
 
     private fun TransactionEntity.toWalletTransactionType(): WalletTransactionType {
         return if (type == TRANSACTION_TYPE_INCOME) WalletTransactionType.Income else WalletTransactionType.Expense
@@ -385,6 +424,23 @@ class SmartManeyRepository(
 
     private fun currentMonthRange(): Pair<Long, Long> {
         val start = Calendar.getInstance().apply {
+            set(Calendar.DAY_OF_MONTH, 1)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        val end = Calendar.getInstance().apply {
+            timeInMillis = start.timeInMillis
+            add(Calendar.MONTH, 1)
+            add(Calendar.MILLISECOND, -1)
+        }
+        return start.timeInMillis to end.timeInMillis
+    }
+
+    private fun previousMonthRange(): Pair<Long, Long> {
+        val start = Calendar.getInstance().apply {
+            add(Calendar.MONTH, -1)
             set(Calendar.DAY_OF_MONTH, 1)
             set(Calendar.HOUR_OF_DAY, 0)
             set(Calendar.MINUTE, 0)
@@ -451,7 +507,8 @@ data class DashboardSummary(
     val monthlySpent: Int,
     val monthlyBudget: Int,
     val budgetProgress: Float,
-    val spendingByCategory: Map<String, Int>
+    val spendingByCategory: Map<String, Int>,
+    val monthlyChangePercent: Int? = null
 )
 
 

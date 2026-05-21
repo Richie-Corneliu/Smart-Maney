@@ -31,3 +31,10 @@ val SmCategoryFoodBg = Color(0xFFFFF0DD)
 val SmCategoryTransportBg = Color(0xFFE8F0FF)
 val SmCategoryShoppingBg = Color(0xFFF2E9FF)
 val SmCategoryHealthBg = Color(0xFFE1F7E9)
+
+// Dark theme tokens
+val SmDarkBackground = Color(0xFF0F1923)
+val SmDarkSurface = Color(0xFF1A2436)
+val SmDarkSurfaceVariant = Color(0xFF222F42)
+val SmDarkTextPrimary = Color(0xFFE8EDF5)
+val SmDarkMuted = Color(0xFF8899B0)

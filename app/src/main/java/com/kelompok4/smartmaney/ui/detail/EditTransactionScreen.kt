@@ -39,6 +39,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kelompok4.smartmaney.ui.theme.LocalCurrency
 import com.kelompok4.smartmaney.ui.theme.SmPrimary
 import com.kelompok4.smartmaney.ui.theme.SmartManeyTheme
 import com.kelompok4.smartmaney.ui.wallet.CurrencyVisualTransformation
@@ -95,7 +96,7 @@ fun EditTransactionScreen(
                 value = amountInput,
                 visualTransformation = CurrencyVisualTransformation(),
                 onValueChange = { amountInput = it.filter(Char::isDigit) },
-                label = { Text("Nominal (Rp)") },
+                label = { Text("Nominal (${LocalCurrency.current.symbol})") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)

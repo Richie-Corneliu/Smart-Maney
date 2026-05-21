@@ -38,11 +38,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.kelompok4.smartmaney.ui.theme.LocalCurrency
 import com.kelompok4.smartmaney.ui.theme.SmDanger
 import com.kelompok4.smartmaney.ui.theme.SmSuccess
 import com.kelompok4.smartmaney.ui.theme.SmartManeyTheme
-import java.text.NumberFormat
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -274,10 +273,10 @@ private fun WalletTransactionItem(
     }
 }
 
-private fun formatCurrency(value: Int): String {
-    val formatter = NumberFormat.getNumberInstance(Locale.US)
-    return "Rp ${formatter.format(value)}"
-}
+@androidx.compose.runtime.Composable
+@androidx.compose.runtime.ReadOnlyComposable
+private fun formatCurrency(value: Int): String =
+    LocalCurrency.current.format(value)
 
 @Preview(showBackground = true)
 @Composable

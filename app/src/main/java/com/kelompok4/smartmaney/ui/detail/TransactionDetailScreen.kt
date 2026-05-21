@@ -39,9 +39,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kelompok4.smartmaney.ui.theme.LocalCurrency
 import com.kelompok4.smartmaney.ui.theme.SmPrimary
 import com.kelompok4.smartmaney.ui.theme.SmartManeyTheme
-import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -220,10 +220,10 @@ private fun DetailRow(label: String, value: String) {
     }
 }
 
-private fun formatCurrency(value: Int): String {
-    val formatter = NumberFormat.getNumberInstance(Locale.forLanguageTag("id-ID"))
-    return "Rp ${formatter.format(value)}"
-}
+@androidx.compose.runtime.Composable
+@androidx.compose.runtime.ReadOnlyComposable
+private fun formatCurrency(value: Int): String =
+    LocalCurrency.current.format(value)
 
 private fun formatDate(timestampMillis: Long): String {
     if (timestampMillis <= 0L) return "-"
