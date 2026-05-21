@@ -9,7 +9,6 @@ import java.util.Calendar
 class DatabaseSeeder(private val database: SmartManeyDatabase) {
 
     suspend fun seedIfEmpty() {
-        if (database.transactionDao().countTransactions() > 0) return
         seedTransactions()
         seedBudget()
         seedWallet()
@@ -17,6 +16,7 @@ class DatabaseSeeder(private val database: SmartManeyDatabase) {
 
     private suspend fun seedTransactions() {
         val dao = database.transactionDao()
+        if (dao.countTransactions() > 0) return
         currentMonthTransactions().forEach { dao.insertTransaction(it) }
         previousMonthTransactions().forEach { dao.insertTransaction(it) }
     }

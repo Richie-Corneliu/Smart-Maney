@@ -16,7 +16,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -32,9 +36,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kelompok4.smartmaney.ui.theme.SmPrimary
+import com.kelompok4.smartmaney.ui.theme.SmartManeyTheme
+import com.kelompok4.smartmaney.ui.wallet.CurrencyVisualTransformation
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -54,7 +61,9 @@ fun EditTransactionScreen(
     var amountInput by remember(initialAmount) { mutableStateOf(initialAmount.toString()) }
     var noteInput by remember { mutableStateOf(initialNote) }
     var categoryInput by remember { mutableStateOf(initialCategory) }
+    var categoryExpanded by remember { mutableStateOf(false) }
     var paymentMethodInput by remember { mutableStateOf(initialPaymentMethod) }
+    var paymentMethodExpanded by remember { mutableStateOf(false) }
     var dateInput by remember {
         mutableStateOf(formatMillisToInput(initialCreatedAtMillis))
     }
@@ -84,6 +93,7 @@ fun EditTransactionScreen(
         ) {
             OutlinedTextField(
                 value = amountInput,
+                visualTransformation = CurrencyVisualTransformation(),
                 onValueChange = { amountInput = it.filter(Char::isDigit) },
                 label = { Text("Nominal (Rp)") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -91,21 +101,63 @@ fun EditTransactionScreen(
                 shape = RoundedCornerShape(12.dp)
             )
 
-            OutlinedTextField(
-                value = categoryInput,
-                onValueChange = { categoryInput = it },
-                label = { Text("Kategori") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            )
+            ExposedDropdownMenuBox(
+                expanded = categoryExpanded,
+                onExpandedChange = { categoryExpanded = it }
+            ) {
+                OutlinedTextField(
+                    value = categoryInput,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Kategori") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded) },
+                    modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                ExposedDropdownMenu(
+                    expanded = categoryExpanded,
+                    onDismissRequest = { categoryExpanded = false }
+                ) {
+                    for (option in CATEGORIES) {
+                        DropdownMenuItem(
+                            text = { Text(option) },
+                            onClick = {
+                                categoryInput = option
+                                categoryExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
 
-            OutlinedTextField(
-                value = paymentMethodInput,
-                onValueChange = { paymentMethodInput = it },
-                label = { Text("Metode Pembayaran") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            )
+            ExposedDropdownMenuBox(
+                expanded = paymentMethodExpanded,
+                onExpandedChange = { paymentMethodExpanded = it }
+            ) {
+                OutlinedTextField(
+                    value = paymentMethodInput,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Metode Pembayaran") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = paymentMethodExpanded) },
+                    modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                ExposedDropdownMenu(
+                    expanded = paymentMethodExpanded,
+                    onDismissRequest = { paymentMethodExpanded = false }
+                ) {
+                    for (option in PAYMENT_METHODS) {
+                        DropdownMenuItem(
+                            text = { Text(option) },
+                            onClick = {
+                                paymentMethodInput = option
+                                paymentMethodExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
 
             OutlinedTextField(
                 value = dateInput,
@@ -133,7 +185,7 @@ fun EditTransactionScreen(
                 maxLines = 4
             )
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Button(
                 onClick = {
@@ -157,23 +209,49 @@ fun EditTransactionScreen(
     }
 }
 
+private val CATEGORIES = listOf(
+    "Makanan & Minuman", "Transportasi", "Hiburan", "Tempat Tinggal", "Income", "Lain-lain"
+)
+
+private val PAYMENT_METHODS = listOf(
+    "Cash", "Debit Card", "Credit Card", "E-Wallet", "QRIS", "Bank Transfer"
+)
+
 private fun formatMillisToInput(millis: Long): String {
     if (millis <= 0L) return ""
     return SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(millis))
 }
 
 private fun parseDateInput(input: String): Long? {
-    if (input.isBlank()) return System.currentTimeMillis()
+    if (input.isBlank()) return null
     val patterns = listOf("yyyy-MM-dd HH:mm", "yyyy-MM-dd", "dd/MM/yyyy HH:mm", "dd/MM/yyyy")
     for (pattern in patterns) {
         try {
             val sdf = SimpleDateFormat(pattern, Locale.getDefault())
             sdf.isLenient = false
-            val date = sdf.parse(input)
-            if (date != null) return date.time
+            val pos = java.text.ParsePosition(0)
+            val date = sdf.parse(input, pos)
+            if (date != null && pos.index == input.length) return date.time
         } catch (_: ParseException) {
             // try next pattern
         }
     }
     return null
+}
+
+@Preview(showBackground = true)
+@Composable
+fun EditTransactionScreenPreview() {
+
+    SmartManeyTheme {
+        EditTransactionScreen(
+            initialAmount = 50000,
+            initialNote = "Makan siang di restoran",
+            initialCategory = "Makanan & Minuman",
+            initialPaymentMethod = "Debit Card",
+            initialCreatedAtMillis = System.currentTimeMillis(),
+            onBackClick = {},
+            onSaveClick = { _, _, _, _, _ -> }
+        )
+    }
 }

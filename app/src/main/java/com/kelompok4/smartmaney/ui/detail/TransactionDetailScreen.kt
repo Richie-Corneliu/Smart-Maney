@@ -36,9 +36,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kelompok4.smartmaney.ui.theme.SmPrimary
+import com.kelompok4.smartmaney.ui.theme.SmartManeyTheme
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -229,3 +231,19 @@ private fun formatDate(timestampMillis: Long): String {
     return formatter.format(Date(timestampMillis))
 }
 
+
+@Preview(showBackground = true)
+@Composable
+fun TransactionDetailScreenPreview() {
+    SmartManeyTheme {
+        TransactionDetailScreen(
+            amount = 150000,
+            note = "Makan siang di restoran",
+            category = "Makan",
+            paymentMethod = "OVO",
+            createdAtMillis = System.currentTimeMillis(),
+            onBackClick = {},
+            onEditClick = {}
+        )
+    }
+}

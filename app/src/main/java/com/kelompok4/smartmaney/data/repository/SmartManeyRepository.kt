@@ -231,7 +231,7 @@ class SmartManeyRepository(
             category = normalizedCategory,
             note = normalizedNote,
             paymentMethod = normalizedPayment,
-            createdAtMillis = receipt.transactionDateMillis ?: System.currentTimeMillis()
+            createdAtMillis = System.currentTimeMillis()
         )
         val insertedId = transactionDao.insertTransaction(entity)
         currentUid()?.let { uid ->
@@ -341,11 +341,16 @@ class SmartManeyRepository(
 
     private fun normalizeBudgetCategoryName(rawCategory: String): String {
         return when (rawCategory.trim().lowercase(Locale.ROOT)) {
-            "food", "food & beverages", "makanan", "makanan & minuman", "kuliner" -> "Makanan & Minuman"
-            "transport", "transportation", "transportasi", "commute" -> "Transportasi"
-            "shopping", "belanja", "entertainment", "hiburan" -> "Hiburan"
-            "rent", "housing", "tempat tinggal", "accommodation" -> "Tempat Tinggal"
-            "lain-lain", "other", "others", "misc", "miscellaneous" -> "Lain-lain"
+            "food", "food & beverages", "makanan", "makanan & minuman", "kuliner",
+            "grocery", "groceries", "restaurant", "cafe", "warung", "belanja makanan" -> "Makanan & Minuman"
+            "transport", "transportation", "transportasi", "commute",
+            "fuel", "parking", "toll", "ride-hailing", "ojek", "taxi", "bus" -> "Transportasi"
+            "shopping", "belanja", "entertainment", "hiburan",
+            "subscription", "game", "cinema", "movie" -> "Hiburan"
+            "rent", "housing", "tempat tinggal", "accommodation",
+            "utilities", "electricity", "water", "internet", "listrik", "air" -> "Tempat Tinggal"
+            "lain-lain", "other", "others", "misc", "miscellaneous",
+            "health", "healthcare", "education", "kesehatan", "pendidikan" -> "Lain-lain"
             "income", "pemasukan" -> DEFAULT_INCOME_CATEGORY
             else -> "Lain-lain"
         }

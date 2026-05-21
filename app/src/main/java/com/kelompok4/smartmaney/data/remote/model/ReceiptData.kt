@@ -87,6 +87,8 @@ data class ReceiptData(
 			if (dateText.isNullOrBlank()) return null
 			val patterns = listOf(
 				"yyyy-MM-dd HH:mm",
+				"yyyy-MM-dd'T'HH:mm:ss",
+				"yyyy-MM-dd'T'HH:mm",
 				"yyyy-MM-dd",
 				"dd/MM/yyyy HH:mm",
 				"dd/MM/yyyy"

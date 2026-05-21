@@ -1,5 +1,7 @@
 package com.kelompok4.smartmaney.ui.dashboard
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -39,6 +41,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -377,19 +381,25 @@ private fun DistributionCard(categories: List<SpendingCategory>) {
 
 @Composable
 private fun DonutChart(categories: List<SpendingCategory>) {
+    val progress = remember { Animatable(0f) }
+    LaunchedEffect(categories) {
+        progress.snapTo(0f)
+        progress.animateTo(1f, animationSpec = tween(durationMillis = 900))
+    }
     Box(contentAlignment = Alignment.Center) {
         Canvas(modifier = Modifier.size(120.dp)) {
             var start = -90f
             categories.forEach { item ->
-                val sweep = item.share * 360f
+                val fullSweep = item.share * 360f
+                val animatedSweep = fullSweep * progress.value
                 drawArc(
                     color = item.color,
                     startAngle = start,
-                    sweepAngle = sweep,
+                    sweepAngle = animatedSweep,
                     useCenter = false,
                     style = Stroke(width = 22.dp.toPx(), cap = StrokeCap.Butt)
                 )
-                start += sweep
+                start += animatedSweep
             }
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -530,7 +540,7 @@ private fun formatCurrency(value: Int): String {
     return "Rp ${formatter.format(value)}"
 }
 
-@Preview(showBackground = true, showSystemUi = true)
+@Preview(showBackground = true)
 @Composable
 private fun DashboardScreenPreview() {
     SmartManeyTheme {
