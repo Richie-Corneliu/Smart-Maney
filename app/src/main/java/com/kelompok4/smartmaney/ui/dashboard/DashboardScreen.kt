@@ -61,6 +61,7 @@ import com.kelompok4.smartmaney.ui.theme.SmCategoryHealth
 import com.kelompok4.smartmaney.ui.theme.SmCategoryRent
 import com.kelompok4.smartmaney.ui.theme.SmCategoryShopping
 import com.kelompok4.smartmaney.ui.theme.SmCategoryTransport
+import com.kelompok4.smartmaney.ui.theme.SmDanger
 import com.kelompok4.smartmaney.ui.theme.SmHeader
 import com.kelompok4.smartmaney.ui.theme.SmMuted
 import com.kelompok4.smartmaney.ui.theme.SmPrimary

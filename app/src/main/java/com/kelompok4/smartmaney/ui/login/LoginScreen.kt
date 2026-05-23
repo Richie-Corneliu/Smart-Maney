@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -47,80 +48,85 @@ fun LoginScreen(
     isGoogleSigningIn: Boolean = false,
     googleSignInError: String? = null
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp, vertical = 36.dp)
-            .padding(horizontal = 28.dp, vertical = 36.dp),
-        horizontalAlignment = Alignment.CenterHorizontally, // Cross-axis (Horizontal)
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = stringResource(R.string.login_title),
-            style = MaterialTheme.typography.headlineMedium,
-            color = SmTextHeading,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        val composition by rememberLottieComposition(
-            LottieCompositionSpec.RawRes(R.raw.revenue_anim)
-        )
+    Scaffold(
 
-        LottieAnimation(
-            composition = composition,
-            iterations = LottieConstants.IterateForever,
-            modifier = Modifier.size(180.dp)
-        )
-        Text(
-            text = stringResource(R.string.login_subtitle),
-            style = MaterialTheme.typography.bodyLarge,
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(26.dp))
-
-        ActionButton(
-            label = if (isGoogleSigningIn) {
-                stringResource(R.string.google_signing_in)
-            } else {
-                stringResource(R.string.continue_with_google)
-            },
-            containerColor = Color.White,
-            contentColor = SmTextHeading,
-            prefix = stringResource(R.string.google_icon_placeholder),
-            onClick = onGoogleClick,
-            enabled = !isGoogleSigningIn
-        )
-
-        if (!googleSignInError.isNullOrBlank()) {
-            Spacer(modifier = Modifier.height(10.dp))
+    ) { paddingValues ->
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 24.dp, vertical = 36.dp)
+                .padding(horizontal = 28.dp, vertical = 36.dp),
+            horizontalAlignment = Alignment.CenterHorizontally, // Cross-axis (Horizontal)
+            verticalArrangement = Arrangement.Center
+        ) {
             Text(
-                text = googleSignInError,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall,
+                text = stringResource(R.string.login_title),
+                style = MaterialTheme.typography.headlineMedium,
+                color = SmTextHeading,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            val composition by rememberLottieComposition(
+                LottieCompositionSpec.RawRes(R.raw.revenue_anim)
+            )
+
+            LottieAnimation(
+                composition = composition,
+                iterations = LottieConstants.IterateForever,
+                modifier = Modifier.size(180.dp)
+            )
+            Text(
+                text = stringResource(R.string.login_subtitle),
+                style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center
             )
-        }
+            Spacer(modifier = Modifier.height(26.dp))
 
-        Spacer(modifier = Modifier.height(26.dp))
-        Text(
-            text = buildAnnotatedString {
-                append(stringResource(R.string.terms_prefix))
-                append("\n")
-                withStyle(style = SpanStyle(color = SmPrimary)) {
-                    append(stringResource(R.string.terms_of_service))
-                }
-                append(" ")
-                append(stringResource(R.string.and_separator))
-                append(" ")
-                withStyle(style = SpanStyle(color = SmPrimary)) {
-                    append(stringResource(R.string.privacy_policy))
-                }
-            },
-            style = MaterialTheme.typography.bodySmall,
-            color = SmTerms,
-            textAlign = TextAlign.Center,
-            lineHeight = 18.sp
-        )
+            ActionButton(
+                label = if (isGoogleSigningIn) {
+                    stringResource(R.string.google_signing_in)
+                } else {
+                    stringResource(R.string.continue_with_google)
+                },
+                containerColor = Color.White,
+                contentColor = SmTextHeading,
+                prefix = stringResource(R.string.google_icon_placeholder),
+                onClick = onGoogleClick,
+                enabled = !isGoogleSigningIn
+            )
+
+            if (!googleSignInError.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = googleSignInError,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center
+                )
+            }
+
+            Spacer(modifier = Modifier.height(26.dp))
+            Text(
+                text = buildAnnotatedString {
+                    append(stringResource(R.string.terms_prefix))
+                    append("\n")
+                    withStyle(style = SpanStyle(color = SmPrimary)) {
+                        append(stringResource(R.string.terms_of_service))
+                    }
+                    append(" ")
+                    append(stringResource(R.string.and_separator))
+                    append(" ")
+                    withStyle(style = SpanStyle(color = SmPrimary)) {
+                        append(stringResource(R.string.privacy_policy))
+                    }
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = SmTerms,
+                textAlign = TextAlign.Center,
+                lineHeight = 18.sp
+            )
+        }
     }
 }
 

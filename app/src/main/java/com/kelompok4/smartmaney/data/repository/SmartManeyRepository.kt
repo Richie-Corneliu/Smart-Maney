@@ -268,12 +268,19 @@ class SmartManeyRepository(
         newCreatedAtMillis: Long
     ) {
         val current = transactionDao.getTransactionById(transactionId) ?: return
+        val normalizedCategory = newCategory.trim()
+        val newType = if (normalizedCategory.equals("Income", ignoreCase = true)) {
+            TRANSACTION_TYPE_INCOME
+        } else {
+            TRANSACTION_TYPE_EXPENSE
+        }
         val updated = current.copy(
             amount = newAmount.coerceAtLeast(0),
             note = newNote.trim(),
-            category = newCategory.trim(),
+            category = normalizedCategory,
             paymentMethod = newPaymentMethod.trim(),
-            createdAtMillis = newCreatedAtMillis
+            createdAtMillis = newCreatedAtMillis,
+            type = newType
         )
         transactionDao.updateTransaction(updated)
         currentUid()?.let { uid ->

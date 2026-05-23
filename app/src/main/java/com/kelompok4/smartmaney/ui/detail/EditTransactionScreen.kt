@@ -60,12 +60,12 @@ fun EditTransactionScreen(
     onSaveClick: (amount: Int, note: String, category: String, paymentMethod: String, createdAtMillis: Long) -> Unit
 ) {
     var amountInput by remember(initialAmount) { mutableStateOf(initialAmount.toString()) }
-    var noteInput by remember { mutableStateOf(initialNote) }
-    var categoryInput by remember { mutableStateOf(initialCategory) }
+    var noteInput by remember(initialNote) { mutableStateOf(initialNote) }
+    var categoryInput by remember(initialCategory) { mutableStateOf(initialCategory) }
     var categoryExpanded by remember { mutableStateOf(false) }
-    var paymentMethodInput by remember { mutableStateOf(initialPaymentMethod) }
+    var paymentMethodInput by remember(initialPaymentMethod) { mutableStateOf(initialPaymentMethod) }
     var paymentMethodExpanded by remember { mutableStateOf(false) }
-    var dateInput by remember {
+    var dateInput by remember(initialCreatedAtMillis) {
         mutableStateOf(formatMillisToInput(initialCreatedAtMillis))
     }
     var dateError by remember { mutableStateOf(false) }

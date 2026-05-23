@@ -9,13 +9,11 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.lifecycleScope
 import com.kelompok4.smartmaney.data.local.preferences.CurrencyOption
 import com.kelompok4.smartmaney.data.local.preferences.ThemeMode
 import com.kelompok4.smartmaney.navigation.AppNavHost
 import com.kelompok4.smartmaney.ui.theme.LocalCurrency
 import com.kelompok4.smartmaney.ui.theme.SmartManeyTheme
-import kotlinx.coroutines.launch
 
 
 class MainActivity : ComponentActivity() {
@@ -26,9 +24,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        lifecycleScope.launch {
-           appContainer.seeder.seedIfEmpty()
-        }
+//        lifecycleScope.launch {
+//           appContainer.seeder.seedIfEmpty()
+//        }
         setContent {
             val themeMode by appContainer.themePreferenceStore.themeMode
                 .collectAsState(initial = ThemeMode.SYSTEM)

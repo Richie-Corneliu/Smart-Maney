@@ -31,15 +31,17 @@ import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DonutLarge
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -63,11 +65,13 @@ import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.kelompok4.smartmaney.R
+import com.kelompok4.smartmaney.data.local.preferences.ThemeMode
 import com.kelompok4.smartmaney.ui.theme.LocalCurrency
 import com.kelompok4.smartmaney.ui.theme.SmPrimary
 import com.kelompok4.smartmaney.ui.theme.SmartManeyTheme
 import com.kelompok4.smartmaney.ui.wallet.CurrencyVisualTransformation
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OnboardingScreen(
     uiState: OnboardingUiState,
@@ -77,59 +81,91 @@ fun OnboardingScreen(
     onBudgetChanged: (String) -> Unit,
     onNavigateToDashboard: () -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .navigationBarsPadding()
-    ) {
-        AnimatedContent(
-            targetState = uiState.step,
-            transitionSpec = {
-                val forward = targetState.ordinal > initialState.ordinal
-                (slideInHorizontally { if (forward) it else -it } + fadeIn()) togetherWith
-                (slideOutHorizontally { if (forward) -it else it } + fadeOut())
-            },
-            label = "onboarding_step"
-        ) { step ->
-            when (step) {
-                OnboardingStep.WELCOME -> WelcomeStep(
-                    userName = uiState.userName,
-                    onGetStarted = onNextStep
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        topBar = {
+            if (uiState.step != OnboardingStep.WELCOME) {
+                CenterAlignedTopAppBar(
+                    title = {
+                        if (uiState.step == OnboardingStep.BALANCE || uiState.step == OnboardingStep.BUDGET) {
+                            StepDots(
+                                current = uiState.step.ordinal,
+                                total = 2
+                            )
+                        }
+                    },
+                    navigationIcon = {
+                        if (uiState.step != OnboardingStep.WELCOME) {
+                            IconButton(onClick = onPrevStep) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Back"
+                                )
+                            }
+                        }
+                    },
                 )
-                OnboardingStep.BALANCE -> InputStep(
-                    stepIndex = 1,
-                    totalSteps = 2,
-                    title = "What's your current\nwallet balance?",
-                    subtitle = "This sets your starting balance. You can adjust it anytime.",
-                    inputValue = uiState.balanceInput,
-                    isError = uiState.balanceError,
-                    errorMessage = "Please enter your balance",
-                    onValueChange = onBalanceChanged,
-                    onBack = onPrevStep,
-                    onNext = onNextStep,
-                    nextLabel = "Next",
-                    isLoading = false
-                )
-                OnboardingStep.BUDGET -> InputStep(
-                    stepIndex = 2,
-                    totalSteps = 2,
-                    title = "Set your monthly\nspending limit",
-                    subtitle = "We'll track your spending against this budget each month.",
-                    inputValue = uiState.budgetInput,
-                    isError = uiState.budgetError,
-                    errorMessage = "Please enter a budget amount",
-                    onValueChange = onBudgetChanged,
-                    onBack = onPrevStep,
-                    onNext = onNextStep,
-                    nextLabel = "Finish",
-                    isLoading = uiState.isSaving
-                )
-                OnboardingStep.DONE -> DoneStep(
-                    balance = uiState.balanceInput.toIntOrNull() ?: 0,
-                    budget = uiState.budgetInput.toIntOrNull() ?: 0,
-                    onNavigateToDashboard = onNavigateToDashboard
-                )
+            }
+        },
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .statusBarsPadding()
+                .navigationBarsPadding()
+        ) {
+            AnimatedContent(
+                targetState = uiState.step,
+                transitionSpec = {
+                    val forward = targetState.ordinal > initialState.ordinal
+                    (slideInHorizontally { if (forward) it else -it } + fadeIn()) togetherWith
+                            (slideOutHorizontally { if (forward) -it else it } + fadeOut())
+                },
+                label = "onboarding_step"
+            ) { step ->
+                when (step) {
+                    OnboardingStep.WELCOME -> WelcomeStep(
+                        userName = uiState.userName,
+                        onGetStarted = onNextStep
+                    )
+
+                    OnboardingStep.BALANCE -> InputStep(
+                        stepIndex = 1,
+                        totalSteps = 2,
+                        title = "What's your current\nwallet balance?",
+                        subtitle = "This sets your starting balance. You can adjust it anytime.",
+                        inputValue = uiState.balanceInput,
+                        isError = uiState.balanceError,
+                        errorMessage = "Please enter your balance",
+                        onValueChange = onBalanceChanged,
+                        onBack = onPrevStep,
+                        onNext = onNextStep,
+                        nextLabel = "Next",
+                        isLoading = false
+                    )
+
+                    OnboardingStep.BUDGET -> InputStep(
+                        stepIndex = 2,
+                        totalSteps = 2,
+                        title = "Set your monthly\nspending limit",
+                        subtitle = "We'll track your spending against this budget each month.",
+                        inputValue = uiState.budgetInput,
+                        isError = uiState.budgetError,
+                        errorMessage = "Please enter a budget amount",
+                        onValueChange = onBudgetChanged,
+                        onBack = onPrevStep,
+                        onNext = onNextStep,
+                        nextLabel = "Finish",
+                        isLoading = uiState.isSaving
+                    )
+
+                    OnboardingStep.DONE -> DoneStep(
+                        balance = uiState.balanceInput.toIntOrNull() ?: 0,
+                        budget = uiState.budgetInput.toIntOrNull() ?: 0,
+                        onNavigateToDashboard = onNavigateToDashboard
+                    )
+                }
             }
         }
     }
@@ -160,7 +196,6 @@ private fun WelcomeStep(userName: String, onGetStarted: () -> Unit) {
             text = if (userName.isNotBlank()) "Welcome,\n$userName!" else "Welcome to\nSmartManey!",
             fontSize = 32.sp,
             fontWeight = FontWeight.ExtraBold,
-            color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
             lineHeight = 40.sp
         )
@@ -170,7 +205,6 @@ private fun WelcomeStep(userName: String, onGetStarted: () -> Unit) {
         Text(
             text = "Track expenses, manage budgets,\nand get smart saving insights.",
             fontSize = 15.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             lineHeight = 22.sp
         )
@@ -183,7 +217,6 @@ private fun WelcomeStep(userName: String, onGetStarted: () -> Unit) {
                 .fillMaxWidth()
                 .height(54.dp),
             shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = SmPrimary)
         ) {
             Text("Get Started", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.width(8.dp))
@@ -215,15 +248,6 @@ private fun InputStep(
             .fillMaxSize()
             .padding(horizontal = 28.dp),
     ) {
-        // Back button
-        IconButton(onClick = onBack, modifier = Modifier.padding(top = 8.dp)) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Step progress dots
-        StepDots(current = stepIndex, total = totalSteps)
 
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -232,14 +256,18 @@ private fun InputStep(
             LottieAnimation(
                 composition = walletAnim,
                 iterations = LottieConstants.IterateForever,
-                modifier = Modifier.size(200.dp).align(Alignment.CenterHorizontally)
+                modifier = Modifier
+                    .size(200.dp)
+                    .align(Alignment.CenterHorizontally)
             )
         } else {
             val walletAnim by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.circle_portion))
             LottieAnimation(
                 composition = walletAnim,
                 iterations = LottieConstants.IterateForever,
-                modifier = Modifier.size(200.dp).align(Alignment.CenterHorizontally)
+                modifier = Modifier
+                    .size(200.dp)
+                    .align(Alignment.CenterHorizontally)
             )
         }
 
@@ -249,7 +277,6 @@ private fun InputStep(
             title,
             fontSize = 26.sp,
             fontWeight = FontWeight.ExtraBold,
-            color = MaterialTheme.colorScheme.onBackground,
             lineHeight = 34.sp
         )
 
@@ -258,7 +285,6 @@ private fun InputStep(
         Text(
             subtitle,
             fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
             lineHeight = 20.sp
         )
 
@@ -295,12 +321,10 @@ private fun InputStep(
                 .fillMaxWidth()
                 .height(54.dp)
                 .padding(bottom = 4.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = SmPrimary)
+            shape = RoundedCornerShape(16.dp)
         ) {
             if (isLoading) {
                 CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.onPrimary,
                     strokeWidth = 2.dp,
                     modifier = Modifier.size(20.dp)
                 )
@@ -325,7 +349,6 @@ private fun DoneStep(balance: Int, budget: Int, onNavigateToDashboard: () -> Uni
         Icon(
             Icons.Default.CheckCircle,
             contentDescription = null,
-            tint = SmPrimary,
             modifier = Modifier.size(80.dp)
         )
 
@@ -334,16 +357,14 @@ private fun DoneStep(balance: Int, budget: Int, onNavigateToDashboard: () -> Uni
         Text(
             "You're all set!",
             fontSize = 30.sp,
-            fontWeight = FontWeight.ExtraBold,
-            color = MaterialTheme.colorScheme.onBackground
+            fontWeight = FontWeight.ExtraBold
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
             "Here's a summary of your setup.",
-            fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            fontSize = 14.sp
         )
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -351,7 +372,6 @@ private fun DoneStep(balance: Int, budget: Int, onNavigateToDashboard: () -> Uni
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
@@ -362,7 +382,6 @@ private fun DoneStep(balance: Int, budget: Int, onNavigateToDashboard: () -> Uni
                 )
                 HorizontalDivider(
                     modifier = Modifier.padding(vertical = 12.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant
                 )
                 SummaryRow(
                     icon = Icons.Default.DonutLarge,
@@ -379,8 +398,7 @@ private fun DoneStep(balance: Int, budget: Int, onNavigateToDashboard: () -> Uni
             modifier = Modifier
                 .fillMaxWidth()
                 .height(54.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = SmPrimary)
+            shape = RoundedCornerShape(16.dp)
         ) {
             Text("Go to Dashboard", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.width(8.dp))
@@ -399,12 +417,12 @@ private fun SummaryRow(icon: ImageVector, label: String, value: String) {
                 .background(SmPrimary.copy(alpha = 0.12f)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(icon, contentDescription = null, tint = SmPrimary, modifier = Modifier.size(20.dp))
+            Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
         }
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(value, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+            Text(label, fontSize = 12.sp)
+            Text(value, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -425,7 +443,7 @@ private fun StepDots(current: Int, total: Int) {
     }
 }
 
-@androidx.compose.runtime.Composable
+@Composable
 @androidx.compose.runtime.ReadOnlyComposable
 private fun formatRupiah(amount: Int): String =
     LocalCurrency.current.format(amount)
@@ -433,7 +451,7 @@ private fun formatRupiah(amount: Int): String =
 @Preview(showBackground = true)
 @Composable
 private fun OnBoardingScreenPreview() {
-    SmartManeyTheme {
+    SmartManeyTheme(themeMode = ThemeMode.DARK) {
         OnboardingScreen(
             uiState = OnboardingUiState(
                 step = OnboardingStep.BALANCE,

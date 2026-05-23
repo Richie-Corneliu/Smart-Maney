@@ -21,7 +21,7 @@ class CurrencyVisualTransformation : VisualTransformation {
         }
 
         val formatted = NumberFormat
-            .getNumberInstance(Locale.getDefault())
+            .getNumberInstance(Locale("id", "ID"))
             .format(originalText.toLong())
 
         val offsetMapping = object : OffsetMapping {

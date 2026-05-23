@@ -123,6 +123,7 @@ fun WalletScreen(
                             value = amountInput,
                             onValueChange = { amountInput = it.filter(Char::isDigit) },
                             label = { Text("Amount") },
+                            visualTransformation = CurrencyVisualTransformation(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
